@@ -5,13 +5,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class MqttLogService {
 
-    private static final int DEFAULT_LIMIT = 200;
+    private static final int DEFAULT_LIMIT = 30;
 
     private final MqttLogRepository repository;
 
@@ -31,8 +32,11 @@ public class MqttLogService {
 
     @Transactional(readOnly = true)
     public List<MqttLogEntry> listLatest() {
-        return repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, DEFAULT_LIMIT))
-                .stream()
+        List<MqttLogEntity> entities = repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, DEFAULT_LIMIT));
+        // Keep latest 200 while returning them in chronological order to avoid UI
+        // flicker
+        Collections.reverse(entities);
+        return entities.stream()
                 .map(this::toEntry)
                 .toList();
     }

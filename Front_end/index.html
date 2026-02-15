@@ -971,9 +971,9 @@
                                     </thead>
                                     <tbody>
                                         <tr v-for="rental in filteredAdminRentals" :key="rental.id">
-                                            <td>{{ rental.id }}</td>
+                                            <td>{{ shortId(rental.id) }}</td>
                                             <td>{{ rental.deviceCode }}</td>
-                                            <td>{{ rental.userId }}</td>
+                                            <td>{{ shortId(rental.userId) }}</td>
                                             <td>{{ rental.status }}</td>
                                             <td>{{ formatNumber(rental.amount) }}</td>
                                             <td>
@@ -1408,10 +1408,9 @@ createApp({
                 if (this.canSeeAdmin) {
                     tasks.push(this.loadAdminDashboard());
                 }
-                if (tasks.length) {
-                    await Promise.all(tasks);
-                }
-                await this.refreshLogs();
+                tasks.push(this.refreshLogs());
+                tasks.push(this.refreshMqttLogs());
+                await Promise.all(tasks);
             } finally {
                 this.isAutoRefreshing = false;
             }
@@ -1838,6 +1837,24 @@ createApp({
                 });
             }
         },
+        async refreshMqttLogs() {
+            if (!this.session.token || !this.canSeeAdmin) {
+                this.mqttLogs = [];
+                return;
+            }
+            const data = await this.request(`${apiBase}/api/mqtt/logs`);
+            if (Array.isArray(data)) {
+                this.mqttLogs = data.map(entry => {
+                    const ts = entry.createdAt ? new Date(entry.createdAt) : new Date();
+                    const formatted = ts.toLocaleString('zh-CN', { hour12: false });
+                    const dir = entry.direction || '-';
+                    const topic = entry.topic || '-';
+                    const device = entry.deviceCode ? ` · ${entry.deviceCode}` : '';
+                    const payload = entry.payload || '';
+                    return `[${formatted}] ${dir} ${topic}${device} · ${payload}`;
+                });
+            }
+        },
         async request(url, options = {}) {
             try {
                 const headers = {
@@ -1879,7 +1896,7 @@ createApp({
         logMqtt(message) {
             const timestamp = new Date().toLocaleTimeString();
             this.mqttLogs.push(`[${timestamp}] ${message}`);
-            if (this.mqttLogs.length > 200) {
+            if (this.mqttLogs.length > 30) {
                 this.mqttLogs.shift();
             }
         },
@@ -1927,11 +1944,14 @@ createApp({
             };
             return labels[lockStatus] || lockStatus;
         },
-        rentalShortId(id) {
-            if (!id) {
+        shortId(value) {
+            if (!value) {
                 return '-';
             }
-            return String(id).slice(0, 8);
+            return String(value).slice(0, 8);
+        },
+        rentalShortId(id) {
+            return this.shortId(id);
         },
         rentalDuration(rental) {
             if (!rental || !rental.startedAt) {
