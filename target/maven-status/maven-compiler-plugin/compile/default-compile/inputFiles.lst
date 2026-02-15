@@ -1,4 +1,5 @@
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\activity\ActivityLogEntity.java
+C:\Users\shike\Desktop\后端\src\main\java\com\carebed\mqttlog\MqttLogEntry.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\activity\ActivityLogService.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\admin\dto\AdminMetricPoint.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\activity\ActivityLogController.java
@@ -9,6 +10,7 @@ C:\Users\shike\Desktop\后端\src\main\java\com\carebed\config\CorsConfig.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\DeviceService.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\dto\FaultReportRequest.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\DeviceController.java
+C:\Users\shike\Desktop\后端\src\main\java\com\carebed\mqttlog\MqttLogController.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\wallet\dto\RechargeRequest.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\persistence\DeviceEventEntity.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\auth\AuthController.java
@@ -18,9 +20,11 @@ C:\Users\shike\Desktop\后端\src\main\java\com\carebed\wallet\persistence\Walle
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\common\exception\BadRequestException.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\dto\HeartbeatUpdateRequest.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\rental\dto\RentalStartRequest.java
+C:\Users\shike\Desktop\后端\src\main\java\com\carebed\mqttlog\MqttLogEntity.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\wallet\dto\DisputeResponse.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\common\exception\ResourceNotFoundException.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\wallet\WalletDispute.java
+C:\Users\shike\Desktop\后端\src\main\java\com\carebed\mqttlog\MqttLogRepository.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\Device.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\auth\dto\LoginRequest.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\repair\dto\RepairTicketResponse.java
@@ -86,6 +90,7 @@ C:\Users\shike\Desktop\后端\src\main\java\com\carebed\rental\persistence\Renta
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\repair\dto\RepairTicketUpdateRequest.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\common\exception\BusinessException.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\mqtt\DeviceCommandGateway.java
+C:\Users\shike\Desktop\后端\src\main\java\com\carebed\mqttlog\MqttLogService.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\device\dto\DeviceBindingRequest.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\notification\dto\NotificationResponse.java
 C:\Users\shike\Desktop\后端\src\main\java\com\carebed\auth\UserRole.java

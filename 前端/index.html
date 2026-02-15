@@ -1189,6 +1189,8 @@ createApp({
             admin: defaultAdminState(),
             logs: [],
             mqttLogs: [],
+            deviceSnapshot: {},
+            deviceSnapshotInitialized: false,
             beijingTime: '',
             refreshIntervalMs: 30000,
             autoRefreshTimer: null,
@@ -1613,6 +1615,36 @@ createApp({
         async refreshAdminDevices() {
             const data = await this.request(`${apiBase}/api/devices`);
             if (Array.isArray(data)) {
+                // 首次加载仅建立快照，避免一次性刷屏
+                if (!this.deviceSnapshotInitialized) {
+                    this.deviceSnapshot = Object.fromEntries(data.map(d => [d.id, {
+                        onlineStatus: d.onlineStatus,
+                        lastHeartbeat: d.lastHeartbeat
+                    }]));
+                    this.deviceSnapshotInitialized = true;
+                } else {
+                    const nextSnapshot = {};
+                    for (const device of data) {
+                        const prev = this.deviceSnapshot[device.id];
+                        if (prev) {
+                            if (prev.onlineStatus !== device.onlineStatus) {
+                                const tip = device.onlineStatus === 'ONLINE' ? '设备上线' : '设备离线';
+                                this.logMqtt(`${tip}：${device.deviceCode}`);
+                            }
+                            if (prev.lastHeartbeat !== device.lastHeartbeat && device.lastHeartbeat) {
+                                const lock = device.lockStatus || 'UNKNOWN';
+                                const batt = device.batteryLevel ?? 'N/A';
+                                this.logMqtt(`心跳 ${device.deviceCode} · 电量${batt}% · 锁${lock}`);
+                            }
+                        }
+                        nextSnapshot[device.id] = {
+                            onlineStatus: device.onlineStatus,
+                            lastHeartbeat: device.lastHeartbeat
+                        };
+                    }
+                    this.deviceSnapshot = nextSnapshot;
+                }
+
                 this.admin.devices = data;
                 if (this.admin.edit.id) {
                     const current = data.find(device => device.id === this.admin.edit.id);

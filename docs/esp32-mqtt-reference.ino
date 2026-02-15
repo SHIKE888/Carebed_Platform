@@ -11,7 +11,8 @@ const char *DEVICE_CODE = "BED-0001"; // 与后端设备编码一致
 // === MQTT topics ===
 char heartbeatTopic[64];
 char commandTopic[64];
-const uint8_t COMMAND_QOS = 2;
+// PubSubClient 仅支持 QoS 0/1，订阅用 1 可与后端 QoS2 发布协商为 QoS1
+const uint8_t COMMAND_QOS = 1;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);

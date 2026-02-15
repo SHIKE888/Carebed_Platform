@@ -46,14 +46,16 @@ public class DeviceMqttBridge implements DeviceCommandGateway, MqttCallbackExten
     private final DeviceService deviceService;
     private final MqttProperties properties;
     private final ObjectMapper objectMapper;
+    private final com.carebed.mqttlog.MqttLogService mqttLogService;
 
     private IMqttClient client;
 
-    public DeviceMqttBridge(DeviceService deviceService, MqttProperties properties, ObjectMapper objectMapper,
-            Server broker) {
+        public DeviceMqttBridge(DeviceService deviceService, MqttProperties properties, ObjectMapper objectMapper,
+            com.carebed.mqttlog.MqttLogService mqttLogService, Server broker) {
         this.deviceService = deviceService;
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.mqttLogService = mqttLogService;
         Objects.requireNonNull(broker, "Embedded MQTT broker must be initialized before bridge");
     }
 
@@ -175,6 +177,7 @@ public class DeviceMqttBridge implements DeviceCommandGateway, MqttCallbackExten
             String lockNode = node.path("lockStatus").asText(null);
             DeviceLockStatus lockStatus = parseLockStatus(lockNode);
             deviceService.refreshHeartbeat(deviceCode, battery, lockStatus);
+            mqttLogService.recordIn(topic, new String(message.getPayload()), deviceCode);
             log.debug("Heartbeat processed for {} (battery={}, lock={})", deviceCode, battery, lockStatus);
         } catch (Exception e) {
             log.error("Failed to process heartbeat from {}", deviceCode, e);
@@ -220,6 +223,7 @@ public class DeviceMqttBridge implements DeviceCommandGateway, MqttCallbackExten
             message.setRetained(false);
             client.publish(topic, message);
             deviceService.recordRemoteCommand(deviceId, logDescription);
+            mqttLogService.recordOut(topic, new String(message.getPayload()), device.deviceCode());
             log.info("MQTT {} command published to {}", command, topic);
             return OperationResult.of(successMessage);
         } catch (IOException | MqttException e) {
