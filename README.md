@@ -1,27 +1,11 @@
 # CareBed 平台后端
-CareBed 平台是面向医院共享陪护床业务的后端服务，基于 Spring Boot 3 与 Java 21 开发，覆盖从用户注册登录、设备运营、租借计费到报修、钱包、运营数据分析的完整能力。项目默认采用内存存储，便于原型演示与接口联调，后续可无缝迁移至持久化实现。
+CareBed 平台是面向医院共享陪护床业务的后端服务，基于 Spring Boot 3 与 Java 21 开发，覆盖从用户注册登录、设备运营、租借计费到报修、钱包、运营数据分析的完整能力。当前已使用 MySQL 持久化，并提供 MQTT 桥接、远程指令与收发日志留存。
 
 ---
-
-## 目录
-
 1. [系统概览](#系统概览)
 2. [架构与技术栈](#架构与技术栈)
-3. [环境准备](#环境准备)
-4. [快速启动](#快速启动)
-5. [配置说明](#配置说明)
-6. [角色与权限矩阵](#角色与权限矩阵)
-7. [功能模块详解](#功能模块详解)
 8. [核心业务流程](#核心业务流程)
 9. [数据模型速览](#数据模型速览)
-10. [API 参考](#api-参考)
-11. [通知策略](#通知策略)
-12. [测试与质量保障](#测试与质量保障)
-13. [运维与部署建议](#运维与部署建议)
-14. [常见问题](#常见问题)
-15. [未来规划](#未来规划)
-
----
 
 ## 系统概览
 
@@ -41,70 +25,14 @@ CareBed 平台是面向医院共享陪护床业务的后端服务，基于 Sprin
 | 语言 | Java 21 |
 | 框架 | Spring Boot 3.2.x、Spring MVC、Spring Validation、Spring Security (仅做简单 Token 校验) |
 | 构建 | Maven |
-| 数据格式 | RESTful JSON |
-| 日志 & 监控 | Spring Boot Actuator (已引入，可进一步扩展) |
-| 存储 | 当前为内存 Map，方便演示；后续可接入关系型数据库或 NoSQL |
-| 推送 | 简化为站内消息模型，可扩展为短信/微信/消息队列 |
+## 未来规划
 
----
-
-## 环境准备
-
-- 操作系统：Windows / macOS / Linux
-- JDK：JDK 21
-- 构建工具：Maven 3.9+
-- IDE：推荐 IntelliJ IDEA / VS Code（需装 Java 相关插件）
-
----
-
-## 快速启动
-
-```bash
-# 1. 拉取代码后进入项目根目录
-cd /path/to/carebed-platform
-
-# 2. 编译（跳过测试）
-mvn -DskipTests compile
-
-# 3. 运行 Spring Boot
-mvn spring-boot:run
-
-# 4. 或打包后运行
-mvn -DskipTests package
-java -jar target/carebed-platform-0.0.1-SNAPSHOT.jar
-```
-
-服务启动后默认监听 `http://localhost:8081`。
-
----
-
-## 配置说明
-
-`src/main/resources/application.yml` 已包含 MySQL 数据源与 MQTT 基本配置。如需调整端口或数据库地址，可修改：
-
-```yaml
-server:
-	port: 8081
-
-spring:
-	datasource:
-		url: jdbc:mysql://localhost:3306/carebed?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
-		username: carebed
-		password: carebed
-		driver-class-name: com.mysql.cj.jdbc.Driver
-
-carebed:
-	mqtt:
-		broker.host: 0.0.0.0
-		broker.port: 1883
-		bridge.host: 127.0.0.1
-		bridge.port: 1883
-		bridge.qos: 1
-```
-
-数据库表会在启动时通过 `schema.sql` 自动创建（含通知、MQTT 日志表），也可自行迁移到 Flyway/Liquibase。
-
-同时根据需要开启 Spring Scheduling、消息队列、缓存等组件。
+- **设备物联网化**：继续强化 MQTT/设备指令链路，增加设备端回执与更多指令类型。
+- **消息多渠道**：集成短信、微信公众号、小程序模板消息等。
+- **多医院支持**：引入组织维度的多租户设计，实现跨院区管理。
+- **计费策略升级**：支持按次、按天、阶梯价、优惠券、押金等模式。
+- **风险控制**：增加设备盗损检测、异常用电报警、人机巡检流程。
+- **数据分析**：引入大屏可视化，实时展示床位分布、使用热力图、维修 SLA。
 
 ---
 
@@ -136,11 +64,12 @@ carebed:
 - `POST /api/auth/link-patient` 家属可填写住院号/床位号，方便订单关联。
 - 数据结构：`UserAccount`（UUID 主键、BCrypt 加密密码、角色、联系方式、患者关联信息）。
 
-### 2. 智能设备管理
+### 2. 智能设备管理与 MQTT
 
 - 设备注册、更新、删除、绑定、释放、心跳上报、故障上报、远程重启。
-- 设备状态枚举：`AVAILABLE`、`IN_USE`、`MAINTENANCE`、`OFFLINE`。
-- 事件流 `DeviceEvent` 记录每次操作，用于追踪设备生命周期。
+- MQTT 桥接：订阅 `devices/{code}/heartbeat`；向 `devices/{code}/command` 以 QoS2 下发 UNLOCK/REBOOT（设备可用 QoS1 订阅以兼容 PubSubClient）。
+- MQTT 收发日志持久化，可通过 `/api/mqtt/logs`（管理员）查看最近 200 条。
+- 设备状态枚举：`AVAILABLE`、`IN_USE`、`MAINTENANCE`、`OFFLINE`；事件流 `DeviceEvent` 追踪生命周期。
 
 ### 3. 租借使用与归还
 
@@ -301,7 +230,7 @@ Content-Type: application/json
 | 报修状态变化 | REPAIR_UPDATE | 家属 | 监控维修进度 |
 | 系统异常/取消 | SYSTEM_ALERT | 相关用户 | 如订单被取消 |
 
-通知默认存储在内存消息仓库，可扩展至消息队列、短信、推送平台。
+通知存储在数据库表 `notification_messages`，可按需扩展到消息队列、短信、推送平台。
 
 ---
 
@@ -330,17 +259,17 @@ Content-Type: application/json
 
 ## 常见问题
 
-1. **为什么没有看到持久化数据？**
-	 - 当前 Demo 使用内存 Map 保存数据，重启后会重置。
+1. **为什么没有看到数据表或数据？**
+	 - 检查 MySQL 连接是否正确；启动时会执行 `schema.sql` 自动建表。确认使用的数据库实例与应用配置一致。
 
 2. **如何扩展 Token 机制？**
 	 - 可替换为 JWT（Spring Security + jjwt），或改用 OAuth2/OpenID Connect。
 
 3. **如何接入真实支付？**
-	 - 目前钱包模块为虚拟账户，为接入第三方支付需新增回调接口与账务对账表。
+	 - 当前钱包为虚拟账户，接入第三方支付需新增支付回调、账务对账表与签名校验逻辑。
 
 4. **蓝牙开锁如何对接？**
-	 - 在租借开始前调用第三方蓝牙服务 API，并将其结果记录到 `DeviceEvent`。
+	 - 在租借开始前调用第三方蓝牙服务 API，并将结果写入 `DeviceEvent`，与现有远程指令/事件流对齐。
 
 ---
 
@@ -355,58 +284,3 @@ Content-Type: application/json
 
 ---
 
-如需更多帮助或希望拓展特定模块，请联系项目维护者或提交 Issue。祝使用顺利！
-
-1. 安装 JDK 21 与 Maven 3.9 及以上版本。
-2. 本示例使用内存存储，无需额外配置密钥或数据库。
-3. 编译项目：`mvn -DskipTests compile`
-4. 启动服务：`mvn spring-boot:run`
-
-默认访问地址：`http://localhost:8080`
-
-## 功能模块
-
-- **用户与认证**：支持陪护家属与管理员注册、登录，使用 `X-Auth-Token` 请求头访问受保护接口，家属可关联患者住院号或床位号。
-- **智能设备管理**：设备注册、信息维护、绑定患者、心跳与电量上报、故障上报及远程重启，保留事件轨迹。
-- **MQTT 桥接与日志**：订阅 `devices/{code}/heartbeat` 接收心跳，向 `devices/{code}/command` 以 QoS2 下发 UNLOCK/REBOOT，MQTT 收发日志持久化并可查询。
-- **租借流程**：扫码取床（模拟蓝牙开锁）、使用计费、归还自动扣费，支持超时检测与运营监控。
-- **消息通知**：实时推送租借成功、超时提醒、关锁确认、扣费提示、报修进度等通知，提供用户与管理员收件箱。
-- **报修与维修**：家属可提交描述与照片，系统自动关联设备与订单；管理员端跟踪处理状态并更新用户。
-- **我的钱包**：余额查询、充值、扣费、退款、费用争议申诉，运营端可人工审核处理。
-- **平台运营管理**：管理员查看用户、设备、订单、财务数据，获取设备在线率/使用率/故障情况及收入趋势。
-
-## 核心 API
-
-| 模块 | 方法 | 路径 | 说明 |
-| ---- | ---- | ---- | ---- |
-| 认证 | POST | /api/auth/register | 多角色注册 |
-| 认证 | POST | /api/auth/login | 登录并获得 `X-Auth-Token` |
-| 家属 | POST | /api/auth/link-patient | 关联患者住院号/床位号 |
-| 设备 | POST | /api/devices | 新增设备 |
-| 设备 | POST | /api/devices/{id}/faults | 提交故障上报 |
-| 租借 | POST | /api/rentals/start | 创建租借订单 |
-| 租借 | POST | /api/rentals/{id}/return | 归还并结算 |
-| 消息 | GET | /api/messages | 当前用户消息列表 |
-| 报修 | POST | /api/repairs | 提交报修工单 |
-| 钱包 | GET | /api/wallet | 钱包余额与流水 |
-| MQTT 日志 | GET | /api/mqtt/logs | 管理员查看最近 MQTT 收发记录 |
-| 管理 | GET | /api/admin/overview | 平台指标概览 |
-
-更多接口可参考对应控制器文件。
-
-## 认证与默认账号
-
-- 所有需要鉴权的接口使用 `X-Auth-Token` 请求头。
-- 系统启动时会自动初始化一个管理员账号：用户名 `admin`，密码 `Admin@123`。
-
-## 测试与维护
-
-- 单元测试：`mvn test`
-- 查看依赖更新：`mvn versions:display-dependency-updates`
-- 当前数据存储基于内存集合，后续可替换为数据库或消息队列实现。
-
-## 未来规划
-
-- 与真实蓝牙开锁服务对接，在 `/api/rentals/start` 中下发指令。
-- 引入持久化存储、消息队列与分布式事务管理。
-- 使用 Spring Scheduling 定时执行 `RentalService.scanForOverdue()` 处理超时订单。
