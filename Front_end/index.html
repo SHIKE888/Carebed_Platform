@@ -5,15 +5,20 @@
     <title>CareBed 平台演示系统</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7Q8Y7bQAnNJo7XU9lrw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         :root {
             color-scheme: light;
+        }
+        html {
+            min-height: 100%;
+            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 40%, #0f172a 100%) fixed;
         }
         body {
             margin: 0;
             min-height: 100vh;
             color: #0f172a;
-            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 40%, #0f172a 100%) fixed;
+            background: inherit;
             font-family: "Segoe UI", "PingFang SC", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
         }
         a {
@@ -232,6 +237,10 @@
         }
         .area-header-top h2 {
             margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
         }
         .area-header-sub {
             margin: 0;
@@ -286,11 +295,21 @@
         .list-plain li + li {
             margin-top: 0.75rem;
         }
+        .device-list {
+            padding-left: 40px;
+        }
         .section-title {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 20px;
+        }
+        .section-title h3 {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
         }
         .badge {
             display: inline-flex;
@@ -347,6 +366,9 @@
         .table-compact td {
             white-space: normal;
             word-break: break-word;
+        }
+        .nowrap {
+            white-space: nowrap;
         }
         .table-compact tbody tr:hover {
             background: rgba(148, 163, 184, 0.16);
@@ -420,6 +442,66 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
 
+        .pager {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .pager button {
+            min-width: 4.5rem;
+        }
+        .pager-info {
+            color: #475569;
+            font-size: 0.88rem;
+        }
+
+        .mobile-bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            gap: 4px;
+            padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0));
+            background: rgba(15, 23, 42, 0.94);
+            color: #e2e8f0;
+            z-index: 50;
+            box-shadow: 0 -12px 30px -20px rgba(15, 23, 42, 0.7);
+        }
+        .mobile-bottom-nav button {
+            flex: 1;
+            border: 1px solid rgba(226, 232, 240, 0.16);
+            background: rgba(226, 232, 240, 0.08);
+            color: inherit;
+            border-radius: 12px;
+            padding: 0.65rem 0.4rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .mobile-bottom-nav button.active {
+            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 60%);
+            border-color: transparent;
+            color: #0f172a;
+            box-shadow: 0 12px 30px -16px rgba(14, 165, 233, 0.9);
+        }
+        .mobile-bottom-nav .nav-label {
+            display: block;
+            font-size: 0.95rem;
+        }
+        .mobile-bottom-nav .nav-sub {
+            display: block;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+        .mobile-bottom-nav .nav-icon {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 0.1rem;
+        }
+
         /* Gap fallback removed to avoid double stacking of spacing in nested layouts */
         .btn-refresh {
             width: 3rem;
@@ -458,6 +540,12 @@
             .area-grid {
                 gap: 20px;
             }
+            .app-shell.has-mobile-nav {
+                padding-bottom: 6rem;
+            }
+            .mobile-bottom-nav {
+                display: flex;
+            }
         }
         @media (max-width: 640px) {
             .hero {
@@ -493,7 +581,7 @@
         </div>
     </section>
 
-    <main class="app-shell">
+    <main class="app-shell" :class="{ 'has-mobile-nav': mobileNavVisible }">
         <article class="card auth-card" v-if="!session.token">
             <div class="auth-switch">
                 <button type="button" :class="{ active: authCard === 'login' }" @click="switchAuthCard('login')">登录账号</button>
@@ -559,7 +647,7 @@
         <template v-else>
             <div class="dashboard-shell">
                 <aside class="session-panel">
-                    <article class="card">
+                    <article class="card" v-if="showTokenCard">
                         <div class="panel-heading">
                             <h2>{{ session.displayName }}</h2>
                             <p>{{ session.role }}</p>
@@ -570,7 +658,7 @@
                             <code>{{ session.token }}</code>
                         </details>
                     </article>
-                    <article class="card">
+                    <article class="card" v-if="showWorkspaceCard">
                         <h3>工作区</h3>
                         <div class="area-tabs">
                             <button @click="switchArea('customer')" :class="{ secondary: activeArea !== 'customer' }" v-if="canSeeCustomer">客户门户</button>
@@ -596,7 +684,7 @@
                             <p class="area-header-sub">实时同步钱包、租借、报修与消息，协助陪护家属完成自助操作。</p>
                         </article>
                         <div class="area-grid">
-                            <article class="card">
+                            <article class="card" v-if="showMobileSection('mine')">
                                 <div class="section-title">
                                     <h3>钱包与充值</h3>
                                     <button class="btn-refresh" @click="refreshWallet">刷新</button>
@@ -625,7 +713,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="txn in customer.wallet.transactions" :key="txn.id">
+                                        <tr v-for="txn in pagedWalletTransactions" :key="txn.id">
                                             <td>{{ formatTime(txn.occurredAt) }}</td>
                                             <td>{{ txn.type }}</td>
                                             <td>{{ formatNumber(txn.amount) }}</td>
@@ -633,6 +721,11 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="pager" v-if="transactionsTotalPages > 1">
+                                    <button type="button" class="secondary" :disabled="pagination.transactions === 1" @click="changePage('transactions', -1, transactionsTotalPages)">上一页</button>
+                                    <span class="pager-info">第 {{ pagination.transactions }} / {{ transactionsTotalPages }} 页</span>
+                                    <button type="button" class="secondary" :disabled="pagination.transactions === transactionsTotalPages" @click="changePage('transactions', 1, transactionsTotalPages)">下一页</button>
+                                </div>
                                 <p v-else class="muted">暂无交易记录。</p>
                                 <h4 style="margin-top:1.25rem;">费用争议</h4>
                                 <form class="stack" @submit.prevent="submitDispute">
@@ -654,32 +747,37 @@
                                 </ul>
                             </article>
 
-                            <article class="card horizontal-card">
+                            <article class="card horizontal-card" v-if="showMobileSection('devices')">
                                 <div class="section-title">
                                     <h3>设备列表</h3>
                                     <button class="btn-refresh" @click="refreshCustomerDevices">刷新</button>
                                 </div>
                                 <div class="horizontal-content">
                                     <p class="muted">展示当前所有设备状态，便于挑选可租借的设备。</p>
-                                    <ul class="list-plain">
-                                        <li v-for="device in customer.devices" :key="device.id">
+                                    <ul class="list-plain device-list">
+                                        <li v-for="device in pagedCustomerDevices" :key="device.id">
                                             <span class="status-dot" :class="`status-${device.status}`"></span>
                                             <div class="device-entry-head">
                                                 <strong>{{ device.deviceCode }}</strong>
                                                 <span class="badge">{{ displayDeviceStatus(device.status) }}</span>
                                             </div>
                                             <div class="muted">{{ device.ward }} · 床位 {{ device.bedNumber }}</div>
-                                            <div class="muted">锁状态：{{ displayLockStatus(device.lockStatus, device.status) }}</div>
+                                            <div class="muted">状态：{{ displayLockStatus(device.lockStatus, device.status) }}</div>
                                         </li>
                                     </ul>
+                                    <div class="pager" v-if="devicesTotalPages > 1">
+                                        <button type="button" class="secondary" :disabled="pagination.devices === 1" @click="changePage('devices', -1, devicesTotalPages)">上一页</button>
+                                        <span class="pager-info">第 {{ pagination.devices }} / {{ devicesTotalPages }} 页</span>
+                                        <button type="button" class="secondary" :disabled="pagination.devices === devicesTotalPages" @click="changePage('devices', 1, devicesTotalPages)">下一页</button>
+                                    </div>
                                 </div>
                             </article>
 
-                            <article class="card">
+                            <article class="card" v-if="showMobileSection('devices')">
                                 <div class="section-title">
-                                    <h3>租借管理</h3>
+                                    <h3>快速租借</h3>
                                 </div>
-                                <p v-if="lockedDeviceCode && !isAdmin" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码，设备列表已置顶）</p>
+                                <p v-if="lockedDeviceCode && !isAdmin" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码）</p>
                                 <form class="stack" @submit.prevent="startRental">
                                     <label>
                                         设备编号
@@ -687,26 +785,31 @@
                                     </label>
                                     <label>
                                         预期租借时长（小时）
-                                        <input type="number" min="1" max="168" v-model.number="customer.rentalForm.expectedHours" required>
+                                        <input type="number" min="1" max="14" v-model.number="customer.rentalForm.expectedHours" required>
                                     </label>
                                     <button type="submit">发起租借</button>
                                 </form>
-                                <h4 style="margin-top:1.25rem;">我的租借记录</h4>
+                            </article>
+
+                            <article class="card" v-if="showMobileSection('orders')">
+                                <div class="section-title">
+                                    <h3>租借记录</h3>
+                                </div>
                                 <table class="table-compact rentals-table">
                                     <thead>
                                         <tr>
-                                            <th>订单号</th>
+                                            <th class="nowrap">订单号</th>
                                             <th>状态</th>
-                                            <th>时长</th>
+                                            <th class="nowrap">时长</th>
                                             <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <template v-for="rental in customer.rentals" :key="rental.id">
+                                        <template v-for="rental in pagedCustomerRentals" :key="rental.id">
                                             <tr>
-                                                <td>{{ rentalShortId(rental.id) }}</td>
-                                                <td>{{ rental.status }}</td>
-                                                <td>{{ rentalDuration(rental) }}</td>
+                                                <td class="nowrap">{{ rentalShortId(rental.id) }}</td>
+                                                <td>{{ displayRentalStatus(rental.status) }}</td>
+                                                <td class="nowrap">{{ rentalDuration(rental) }}</td>
                                                 <td>
                                                     <button type="button" class="rental-detail-toggle" @click="toggleRentalDetails(rental.id)">
                                                         {{ isRentalExpanded(rental.id) ? '收起' : '详情' }}
@@ -733,9 +836,14 @@
                                         </template>
                                     </tbody>
                                 </table>
+                                <div class="pager" v-if="rentalsTotalPages > 1">
+                                    <button type="button" class="secondary" :disabled="pagination.rentals === 1" @click="changePage('rentals', -1, rentalsTotalPages)">上一页</button>
+                                    <span class="pager-info">第 {{ pagination.rentals }} / {{ rentalsTotalPages }} 页</span>
+                                    <button type="button" class="secondary" :disabled="pagination.rentals === rentalsTotalPages" @click="changePage('rentals', 1, rentalsTotalPages)">下一页</button>
+                                </div>
                             </article>
 
-                            <article class="card horizontal-card">
+                            <article class="card horizontal-card" v-if="showMobileSection('orders')">
                                 <div class="section-title">
                                     <h3>报修中心</h3>
                                     <button class="btn-refresh" @click="refreshCustomerRepairs">刷新</button>
@@ -764,17 +872,22 @@
                                     <div class="stack" style="margin:0;">
                                         <h4 style="margin:0;">报修进度</h4>
                                         <ul class="list-plain">
-                                            <li v-for="ticket in customer.repairs" :key="ticket.id">
+                                            <li v-for="ticket in pagedCustomerRepairs" :key="ticket.id">
                                                 <strong>{{ ticket.deviceCode }}</strong> · {{ ticket.status }}
                                                 <div class="muted">提交时间：{{ formatTime(ticket.createdAt) }}</div>
                                                 <div class="muted" v-if="ticket.resolution">处理说明：{{ ticket.resolution }}</div>
                                             </li>
                                         </ul>
+                                        <div class="pager" v-if="repairsTotalPages > 1">
+                                            <button type="button" class="secondary" :disabled="pagination.repairs === 1" @click="changePage('repairs', -1, repairsTotalPages)">上一页</button>
+                                            <span class="pager-info">第 {{ pagination.repairs }} / {{ repairsTotalPages }} 页</span>
+                                            <button type="button" class="secondary" :disabled="pagination.repairs === repairsTotalPages" @click="changePage('repairs', 1, repairsTotalPages)">下一页</button>
+                                        </div>
                                     </div>
                                 </div>
                             </article>
 
-                            <article class="card horizontal-card">
+                            <article class="card horizontal-card" v-if="showMobileSection('messages')">
                                 <div class="section-title">
                                     <h3>通知中心</h3>
                                     <div class="pill-select">
@@ -786,7 +899,7 @@
                                 <div class="horizontal-content">
                                     <p class="muted">集中展示系统推送通知，可快速筛选未读消息并标记处理。</p>
                                     <ul class="list-plain">
-                                        <li v-for="msg in filteredCustomerMessages" :key="msg.id">
+                                        <li v-for="msg in pagedCustomerMessages" :key="msg.id">
                                             <div>
                                                 <strong>{{ msg.title }}</strong>
                                                 <span class="badge">{{ msg.type }}</span>
@@ -796,6 +909,11 @@
                                             <button v-if="!msg.read" class="secondary" @click="markMessageRead(msg.id)">标记已读</button>
                                         </li>
                                     </ul>
+                                    <div class="pager" v-if="messagesTotalPages > 1">
+                                        <button type="button" class="secondary" :disabled="pagination.messages === 1" @click="changePage('messages', -1, messagesTotalPages)">上一页</button>
+                                        <span class="pager-info">第 {{ pagination.messages }} / {{ messagesTotalPages }} 页</span>
+                                        <button type="button" class="secondary" :disabled="pagination.messages === messagesTotalPages" @click="changePage('messages', 1, messagesTotalPages)">下一页</button>
+                                    </div>
                                 </div>
                             </article>
                         </div>
@@ -1113,7 +1231,7 @@
                 </section>
             </div>
 
-            <section class="log-grid">
+            <section class="log-grid" v-if="showLogCards">
                 <article class="card log-card">
                     <h2>API 请求日志</h2>
                     <pre>{{ logs.slice().reverse().join('\n') || '暂无请求记录' }}</pre>
@@ -1123,6 +1241,29 @@
                     <pre>{{ mqttLogs.slice().reverse().join('\n') || '暂无MQTT记录' }}</pre>
                 </article>
             </section>
+
+            <nav class="mobile-bottom-nav" v-if="mobileNavVisible">
+                <button :class="{ active: mobileTab === 'devices' }" @click="switchMobileTab('devices')">
+                    <i class="fa-solid fa-bed nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">设备</span>
+                    <span class="nav-sub">状态</span>
+                </button>
+                <button :class="{ active: mobileTab === 'orders' }" @click="switchMobileTab('orders')">
+                    <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">订单</span>
+                    <span class="nav-sub">租借·报修</span>
+                </button>
+                <button :class="{ active: mobileTab === 'messages' }" @click="switchMobileTab('messages')">
+                    <i class="fa-solid fa-bell nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">消息</span>
+                    <span class="nav-sub">通知</span>
+                </button>
+                <button :class="{ active: mobileTab === 'mine' }" @click="switchMobileTab('mine')">
+                    <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">我的</span>
+                    <span class="nav-sub">钱包</span>
+                </button>
+            </nav>
         </template>
     </main>
 </div>
@@ -1212,7 +1353,17 @@ createApp({
             isAutoRefreshing: false,
             now: new Date(),
             expandedRentals: [],
-            lockedDeviceCode: ''
+            lockedDeviceCode: '',
+            mobileTab: 'devices',
+            isMobile: false,
+            pageSize: 6,
+            pagination: {
+                devices: 1,
+                rentals: 1,
+                repairs: 1,
+                messages: 1,
+                transactions: 1
+            }
         };
     },
     computed: {
@@ -1231,11 +1382,29 @@ createApp({
             }
             return this.customer.messages;
         },
+        pagedCustomerMessages() {
+            return this.paginateList(this.filteredCustomerMessages, this.pagination.messages, this.pageSize);
+        },
+        pagedWalletTransactions() {
+            const txns = this.customer.wallet && Array.isArray(this.customer.wallet.transactions)
+                ? this.customer.wallet.transactions
+                : [];
+            return this.paginateList(txns, this.pagination.transactions, this.pageSize);
+        },
         filteredAdminDevices() {
             if (!this.admin.deviceFilter) {
                 return this.admin.devices;
             }
             return this.admin.devices.filter(device => device.status === this.admin.deviceFilter);
+        },
+        pagedCustomerDevices() {
+            return this.paginateList(this.customer.devices, this.pagination.devices, this.pageSize);
+        },
+        pagedCustomerRentals() {
+            return this.paginateList(this.customer.rentals, this.pagination.rentals, this.pageSize);
+        },
+        pagedCustomerRepairs() {
+            return this.paginateList(this.customer.repairs, this.pagination.repairs, this.pageSize);
         },
         filteredAdminRentals() {
             if (!this.admin.rentalStatusFilter) {
@@ -1277,6 +1446,45 @@ createApp({
                 }
             }
             return items;
+        },
+        mobileNavVisible() {
+            return this.session.token && this.activeArea === 'customer' && this.isMobile;
+        },
+        showWorkspaceCard() {
+            if (this.activeArea === 'admin') {
+                return true;
+            }
+            return !this.isMobile || this.mobileTab === 'mine';
+        },
+        showLogCards() {
+            if (this.activeArea === 'admin') {
+                return true;
+            }
+            return !this.isMobile || this.mobileTab === 'mine';
+        },
+        showTokenCard() {
+            if (this.activeArea === 'admin') {
+                return true;
+            }
+            return !this.isMobile || this.mobileTab === 'mine';
+        },
+        devicesTotalPages() {
+            return this.totalPages(this.customer.devices);
+        },
+        rentalsTotalPages() {
+            return this.totalPages(this.customer.rentals);
+        },
+        repairsTotalPages() {
+            return this.totalPages(this.customer.repairs);
+        },
+        messagesTotalPages() {
+            return this.totalPages(this.filteredCustomerMessages);
+        },
+        transactionsTotalPages() {
+            const txns = this.customer.wallet && Array.isArray(this.customer.wallet.transactions)
+                ? this.customer.wallet.transactions
+                : [];
+            return this.totalPages(txns);
         }
     },
     methods: {
@@ -1285,6 +1493,41 @@ createApp({
                 return;
             }
             this.authCard = mode;
+        },
+        handleResize() {
+            const query = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+            this.isMobile = query ? query.matches : window.innerWidth <= 720;
+        },
+        switchMobileTab(tab) {
+            if (this.mobileTab === tab) {
+                return;
+            }
+            this.mobileTab = tab;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        showMobileSection(sectionKey) {
+            if (!this.isMobile) {
+                return true;
+            }
+            return this.mobileTab === sectionKey;
+        },
+        paginateList(list, page, size) {
+            if (!Array.isArray(list) || !list.length) {
+                return [];
+            }
+            const start = Math.max(0, (page - 1) * size);
+            return list.slice(start, start + size);
+        },
+        totalPages(list) {
+            if (!Array.isArray(list) || !list.length) {
+                return 1;
+            }
+            return Math.max(1, Math.ceil(list.length / this.pageSize));
+        },
+        changePage(key, delta, total) {
+            const current = this.pagination[key] || 1;
+            const next = Math.min(Math.max(1, current + delta), total || 1);
+            this.pagination[key] = next;
         },
         captureLockedDeviceFromUrl() {
             try {
@@ -1386,6 +1629,7 @@ createApp({
             this.customerLoaded = false;
             this.adminLoaded = false;
             this.expandedRentals = [];
+            this.mobileTab = 'devices';
             if (this.lockedDeviceCode && !this.isAdmin) {
                 this.customer.rentalForm.deviceCode = this.lockedDeviceCode;
             }
@@ -1418,6 +1662,7 @@ createApp({
             this.registerForm = defaultRegisterForm();
             this.authCard = 'login';
             this.expandedRentals = [];
+            this.mobileTab = 'devices';
             this.logs = [];
             this.log('已退出登录');
         },
@@ -1430,6 +1675,10 @@ createApp({
             }
             this.activeArea = area;
             if (area === 'customer') {
+                if (this.isMobile) {
+                    this.mobileTab = 'devices';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
                 this.loadCustomerDashboard();
             }
             if (area === 'admin') {
@@ -1526,6 +1775,7 @@ createApp({
                     }
                 }
                 this.customer.devices = devices;
+                this.pagination.devices = 1;
                 this.log(`获取到 ${data.length} 台设备`);
             }
         },
@@ -1533,15 +1783,19 @@ createApp({
             const data = await this.request(`${apiBase}/api/rentals/me`);
             if (Array.isArray(data)) {
                 this.customer.rentals = data;
-                this.expandedRentals = this.expandedRentals.filter(id =>
+                this.pagination.rentals = 1;
+                const activeIds = data.filter(rental => rental.status === 'ACTIVE').map(rental => rental.id);
+                const preserved = this.expandedRentals.filter(id =>
                     this.customer.rentals.some(rental => rental.id === id)
                 );
+                this.expandedRentals = Array.from(new Set([...preserved, ...activeIds]));
             }
         },
         async refreshWallet() {
             const data = await this.request(`${apiBase}/api/wallet`);
             if (data) {
                 this.customer.wallet = data;
+                this.pagination.transactions = 1;
             }
         },
         async submitRecharge() {
@@ -1577,6 +1831,7 @@ createApp({
             const data = await this.request(`${apiBase}/api/messages`);
             if (Array.isArray(data)) {
                 this.customer.messages = data;
+                this.pagination.messages = 1;
             }
         },
         async markMessageRead(id) {
@@ -1591,6 +1846,7 @@ createApp({
             const data = await this.request(`${apiBase}/api/repairs/me`);
             if (Array.isArray(data)) {
                 this.customer.repairs = data;
+                this.pagination.repairs = 1;
             }
         },
         async submitRepairTicket() {
@@ -1617,6 +1873,10 @@ createApp({
             }
         },
         async startRental() {
+            const ok = confirm(`确认发起租借吗？设备：${this.customer.rentalForm.deviceCode || '未填写'}`);
+            if (!ok) {
+                return;
+            }
             const payload = {
                 deviceCode: this.customer.rentalForm.deviceCode,
                 expectedHours: this.customer.rentalForm.expectedHours
@@ -1632,6 +1892,19 @@ createApp({
             }
         },
         async returnRental(id) {
+            const ok = confirm('确认归还该租借订单吗？');
+            if (!ok) {
+                return;
+            }
+            await this.refreshCustomerDevices();
+            const rental = this.customer.rentals.find(item => item.id === id);
+            const device = rental
+                ? this.customer.devices.find(d => d.deviceCode === rental.deviceCode || d.id === rental.deviceId)
+                : null;
+            if (device && device.lockStatus && device.lockStatus !== 'LOCKED') {
+                alert('请先关闭设备锁，并等待同步后再归还。');
+                return;
+            }
             const data = await this.request(`${apiBase}/api/rentals/${id}/return`, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -1652,6 +1925,10 @@ createApp({
             }
             if (!rental.deviceId) {
                 alert('该订单缺少设备编号，无法开锁');
+                return;
+            }
+            const ok = confirm(`确认发送开锁指令给设备：${rental.deviceCode || rental.deviceId} 吗？`);
+            if (!ok) {
                 return;
             }
             const result = await this.request(`${apiBase}/api/devices/${rental.deviceId}/unlock`, { method: 'POST' });
@@ -2038,6 +2315,15 @@ createApp({
             };
             return labels[lockStatus] || lockStatus;
         },
+        displayRentalStatus(status) {
+            const map = {
+                ACTIVE: '进行中',
+                COMPLETED: '已完成',
+                OVERDUE: '已逾期',
+                CANCELED: '已取消'
+            };
+            return map[status] || status || '未知';
+        },
         shortId(value) {
             if (!value) {
                 return '-';
@@ -2100,6 +2386,8 @@ createApp({
         }
     },
     mounted() {
+        this.handleResize();
+        window.addEventListener('resize', this.handleResize);
         this.captureLockedDeviceFromUrl();
         const restored = this.loadSessionFromStorage();
         this.startRealtimeUpdates();
@@ -2109,6 +2397,7 @@ createApp({
     },
     beforeUnmount() {
         this.stopRealtimeUpdates();
+        window.removeEventListener('resize', this.handleResize);
     }
 }).mount('#app');
 </script>
