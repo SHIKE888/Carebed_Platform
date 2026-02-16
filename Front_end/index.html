@@ -679,11 +679,11 @@
                                 <div class="section-title">
                                     <h3>租借管理</h3>
                                 </div>
-                                <p v-if="lockedDeviceCode" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码，设备列表已置顶，无法修改）</p>
+                                <p v-if="lockedDeviceCode && !isAdmin" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码，设备列表已置顶）</p>
                                 <form class="stack" @submit.prevent="startRental">
                                     <label>
                                         设备编号
-                                        <input type="text" v-model="customer.rentalForm.deviceCode" placeholder="BED-0001" required :disabled="!!lockedDeviceCode">
+                                        <input type="text" v-model="customer.rentalForm.deviceCode" placeholder="BED-0001" required :disabled="!!lockedDeviceCode && !isAdmin">
                                     </label>
                                     <label>
                                         预期租借时长（小时）
@@ -1222,6 +1222,9 @@ createApp({
         canSeeAdmin() {
             return this.session.role === 'ADMIN';
         },
+        isAdmin() {
+            return this.session.role === 'ADMIN';
+        },
         filteredCustomerMessages() {
             if (this.customer.messageFilter === 'unread') {
                 return this.customer.messages.filter(msg => !msg.read);
@@ -1383,7 +1386,7 @@ createApp({
             this.customerLoaded = false;
             this.adminLoaded = false;
             this.expandedRentals = [];
-            if (this.lockedDeviceCode) {
+            if (this.lockedDeviceCode && !this.isAdmin) {
                 this.customer.rentalForm.deviceCode = this.lockedDeviceCode;
             }
             if (this.canSeeCustomer) {
@@ -1515,7 +1518,7 @@ createApp({
             const data = await this.request(`${apiBase}/api/devices`);
             if (Array.isArray(data)) {
                 let devices = data;
-                if (this.lockedDeviceCode) {
+                if (this.lockedDeviceCode && !this.isAdmin) {
                     const matchIndex = devices.findIndex(d => (d.deviceCode || '').toUpperCase() === this.lockedDeviceCode);
                     if (matchIndex > 0) {
                         const [match] = devices.splice(matchIndex, 1);
