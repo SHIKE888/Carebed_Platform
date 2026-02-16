@@ -1889,6 +1889,7 @@ createApp({
                 await this.refreshCustomerRentals();
                 await this.refreshCustomerDevices();
                 this.log(`租借成功：${data.id}`);
+                alert('租借成功，请到订单界面查看');
             }
         },
         async returnRental(id) {
