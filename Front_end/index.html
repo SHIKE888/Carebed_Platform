@@ -679,10 +679,11 @@
                                 <div class="section-title">
                                     <h3>租借管理</h3>
                                 </div>
+                                <p v-if="lockedDeviceCode" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码，设备列表已置顶，无法修改）</p>
                                 <form class="stack" @submit.prevent="startRental">
                                     <label>
                                         设备编号
-                                        <input type="text" v-model="customer.rentalForm.deviceCode" placeholder="BED-0001" required>
+                                        <input type="text" v-model="customer.rentalForm.deviceCode" placeholder="BED-0001" required :disabled="!!lockedDeviceCode">
                                     </label>
                                     <label>
                                         预期租借时长（小时）
@@ -1210,7 +1211,8 @@ createApp({
             clockTimer: null,
             isAutoRefreshing: false,
             now: new Date(),
-            expandedRentals: []
+            expandedRentals: [],
+            lockedDeviceCode: ''
         };
     },
     computed: {
@@ -1280,6 +1282,23 @@ createApp({
                 return;
             }
             this.authCard = mode;
+        },
+        captureLockedDeviceFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const code = params.get('id') || params.get('device');
+                if (!code) {
+                    return;
+                }
+                const normalized = String(code).trim().toUpperCase();
+                if (!normalized) {
+                    return;
+                }
+                this.lockedDeviceCode = normalized;
+                this.customer.rentalForm.deviceCode = normalized;
+            } catch (e) {
+                console.warn('parse url failed', e);
+            }
         },
         saveSession() {
             try {
@@ -1364,6 +1383,9 @@ createApp({
             this.customerLoaded = false;
             this.adminLoaded = false;
             this.expandedRentals = [];
+            if (this.lockedDeviceCode) {
+                this.customer.rentalForm.deviceCode = this.lockedDeviceCode;
+            }
             if (this.canSeeCustomer) {
                 this.loadCustomerDashboard();
             }
@@ -1386,6 +1408,9 @@ createApp({
             this.adminLoaded = false;
             this.customer = defaultCustomerState();
             this.admin = defaultAdminState();
+            if (this.lockedDeviceCode) {
+                this.customer.rentalForm.deviceCode = this.lockedDeviceCode;
+            }
             this.loginForm = defaultLoginForm();
             this.registerForm = defaultRegisterForm();
             this.authCard = 'login';
@@ -1489,7 +1514,15 @@ createApp({
         async refreshCustomerDevices() {
             const data = await this.request(`${apiBase}/api/devices`);
             if (Array.isArray(data)) {
-                this.customer.devices = data;
+                let devices = data;
+                if (this.lockedDeviceCode) {
+                    const matchIndex = devices.findIndex(d => (d.deviceCode || '').toUpperCase() === this.lockedDeviceCode);
+                    if (matchIndex > 0) {
+                        const [match] = devices.splice(matchIndex, 1);
+                        devices = [match, ...devices];
+                    }
+                }
+                this.customer.devices = devices;
                 this.log(`获取到 ${data.length} 台设备`);
             }
         },
@@ -2064,6 +2097,7 @@ createApp({
         }
     },
     mounted() {
+        this.captureLockedDeviceFromUrl();
         const restored = this.loadSessionFromStorage();
         this.startRealtimeUpdates();
         if (restored) {
