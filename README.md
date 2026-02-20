@@ -13,7 +13,7 @@
   - 后端 [Software/SpringBoot/README.md](Software/SpringBoot/README.md)
   - 前端 [Software/Vue/README.md](Software/Vue/README.md)
   - 固件 [Frimware/README.md](Frimware/README.md)
-  - 运维文档 [Docs/](Docs)
+  - 运维文档 [docs/](docs)
 
 ## 架构总览
 
