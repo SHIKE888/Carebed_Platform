@@ -1,6 +1,6 @@
 # CareBed 平台总览
 
-面向医院共享陪护床业务的软硬件一体方案，包含设备端固件、Spring Boot 后端、Vue 前端演示与运维资料。本文提供全局导航、架构与流程图、仓库目录与快速上手。
+面向医院共享陪护床业务的软硬件一体方案，包含设备端硬件、固件、Spring Boot 后端、Vue 前端演示与运维资料。本文提供全局导航、架构与流程图、仓库目录与快速上手。
 
 ## 快捷跳转
 
@@ -102,7 +102,7 @@ sequenceDiagram
 
 ## 快速开始
 
-1. 环境：JDK 21、Maven、MySQL 8、可访问的 MQTT Broker；前端可选 Node.js（本地静态服务），设备端可选 Arduino IDE/PlatformIO。
+1. 环境：JDK 21、Maven、MySQL 8、可访问的 MQTT Broker；前端可选 Node.js（本地静态服务），设备端使用 Arduino IDE。
 2. 后端：按 [Software/SpringBoot/README.md](Software/SpringBoot/README.md) 配置 `application.yml` 的数据源与 MQTT，执行 `mvn spring-boot:run`，默认端口 8081。
 3. 前端：进入 [Software/Vue](Software/Vue)，`npx serve .` 或 `python -m http.server 5173` 后访问；如需改后端地址，修改 `index.html` 顶部 `apiBase`。
 4. 设备：刷写 [Frimware/esp32-mqtt-reference.ino](Frimware/esp32-mqtt-reference.ino)，串口用 `SET WIFI` / `SET ID` 配置联网与设备编号，确保连到同一 MQTT Broker。
