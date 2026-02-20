@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>CareBed 平台演示系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7Q8Y7bQAnNJo7XU9lrw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        :root {
+            color-scheme: light;
+        }
+        html {
+            min-height: 100%;
+            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 40%, #0f172a 100%) fixed;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: #0f172a;
+            background: inherit;
+            font-family: "Segoe UI", "PingFang SC", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        }
+        a {
+            color: inherit;
+        }
+        .hero {
+            padding: 4rem 1.5rem 6rem;
+            color: #ffffff;
+        }
+        .hero-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .hero-legend {
+            max-width: 620px;
+        }
+        .hero-legend .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 0.85rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+        .hero-legend h1 {
+            margin: 0.6rem 0;
+            font-size: clamp(2rem, 4vw, 3.1rem);
+            font-weight: 600;
+        }
+        .hero-legend p {
+            margin: 0;
+            font-size: 1rem;
+            line-height: 1.6;
+            opacity: 0.85;
+        }
+        .hero-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 20px;
+        }
+        .hero-meta-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.18);
+            font-size: 0.82rem;
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+        }
+        .app-shell {
+            max-width: 1180px;
+            margin: -5.5rem auto 2.5rem;
+            padding: 0 1.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            padding: 1.5rem;
+            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 24px 60px -35px rgba(15, 23, 42, 0.6);
+        }
+        .auth-card {
+            max-width: 520px;
+            margin: 0 auto;
+        }
+        .auth-switch {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 1.5rem;
+        }
+        .auth-switch button {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: rgba(226, 232, 240, 0.85);
+            color: #0f172a;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .auth-switch button.active {
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 12px 30px -15px rgba(15, 23, 42, 0.45);
+        }
+        .auth-hint {
+            margin: 0.75rem 0 0;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .link-button {
+            border: none;
+            background: none;
+            color: #2563eb;
+            font-weight: 600;
+            padding: 0;
+            cursor: pointer;
+        }
+        .link-button:hover {
+            text-decoration: underline;
+        }
+        .dashboard-shell {
+            display: grid;
+            grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+            column-gap: 20px;
+            row-gap: 20px;
+            align-items: start;
+        }
+        /* Neutralize Pico default margins on sections inside dashboard to prevent extra stacking */
+        .dashboard-shell section {
+            margin: 0;
+        }
+        /* Remove default article margins so gaps control spacing consistently */
+        .dashboard-shell article {
+            margin: 0;
+        }
+        .session-panel {
+            position: sticky;
+            top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel-heading h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .panel-heading p {
+            margin: 0.25rem 0 0;
+            font-weight: 500;
+        }
+        .token-preview {
+            margin: 0.75rem 0 0;
+            font-size: 0.86rem;
+            color: #64748b;
+        }
+        .token-details summary {
+            cursor: pointer;
+            color: #2563eb;
+            font-size: 0.85rem;
+        }
+        .token-details code {
+            display: block;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #0f172a;
+            color: #f8fafc;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            word-break: break-all;
+        }
+        .area-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .area-tabs button {
+            flex: 1 1 auto;
+            border-radius: 999px;
+        }
+        .session-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 1rem;
+        }
+        .session-stats {
+            margin: 0.5rem 0 0;
+            padding-left: 1.1rem;
+            color: #475569;
+            font-size: 0.88rem;
+        }
+        .session-stats li + li {
+            margin-top: 0.35rem;
+        }
+        .area-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 0;
+        }
+        .area-pane {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 0;
+        }
+        .area-header-card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .area-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .area-header-top h2 {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .area-header-sub {
+            margin: 0;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .area-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 0;
+        }
+        .area-grid .card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .horizontal-card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .horizontal-card .horizontal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .grid-span-full {
+            width: 100%;
+        }
+        .stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-inline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+        .list-plain {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+        .list-plain li + li {
+            margin-top: 0.75rem;
+        }
+        .device-list {
+            padding-left: 40px;
+        }
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        .section-title h3 {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(226, 232, 240, 0.8);
+            font-size: 0.72rem;
+            margin-left: 0.4rem;
+        }
+        .device-entry-head {
+            display: inline-flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.35rem;
+            position: relative;
+            top: -1px;
+        }
+        .status-AVAILABLE { background: #22c55e; }
+        .status-IN_USE { background: #f97316; }
+        .status-MAINTENANCE { background: #eab308; }
+        .status-OFFLINE { background: #ef4444; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 0.45rem 0.6rem;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        th {
+            text-align: left;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        tbody tr:hover {
+            background: rgba(226, 232, 240, 0.45);
+            cursor: pointer;
+        }
+        .table-compact {
+            table-layout: auto;
+            font-size: 0.9rem;
+        }
+        .table-compact th,
+        .table-compact td {
+            white-space: normal;
+            word-break: break-word;
+        }
+        .nowrap {
+            white-space: nowrap;
+        }
+        .table-compact tbody tr:hover {
+            background: rgba(148, 163, 184, 0.16);
+        }
+        .rentals-table tbody tr:hover {
+            cursor: default;
+        }
+        .rental-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .rental-detail p {
+            margin: 0;
+        }
+        .rental-actions {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .rental-detail-row td {
+            background: rgba(226, 232, 240, 0.5);
+            border-bottom: 1px solid #cbd5f5;
+        }
+        .rental-detail-toggle {
+            border: none;
+            background: none;
+            color: #2563eb;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+        }
+        .rental-detail-toggle:hover {
+            text-decoration: underline;
+        }
+        .time-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 0.9rem;
+            background: rgba(226, 232, 240, 0.9);
+            color: #0f172a;
+            border-radius: 999px;
+            font-size: 0.9rem;
+        }
+        pre {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            max-height: 320px;
+            font-size: 0.85rem;
+        }
+        .muted {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+        .pill-select {
+            display: inline-flex;
+            gap: 20px;
+        }
+        .pill-select button {
+            border-radius: 999px;
+        }
+        .log-grid {
+            display: grid;
+            column-gap: 20px;
+            row-gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .pager {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .pager button {
+            min-width: 4.5rem;
+        }
+        .pager-info {
+            color: #475569;
+            font-size: 0.88rem;
+        }
+
+        .mobile-bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            gap: 4px;
+            padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0));
+            background: rgba(15, 23, 42, 0.94);
+            color: #e2e8f0;
+            z-index: 50;
+            box-shadow: 0 -12px 30px -20px rgba(15, 23, 42, 0.7);
+        }
+        .mobile-bottom-nav button {
+            flex: 1;
+            border: 1px solid rgba(226, 232, 240, 0.16);
+            background: rgba(226, 232, 240, 0.08);
+            color: inherit;
+            border-radius: 12px;
+            padding: 0.65rem 0.4rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .mobile-bottom-nav button.active {
+            background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 60%);
+            border-color: transparent;
+            color: #0f172a;
+            box-shadow: 0 12px 30px -16px rgba(14, 165, 233, 0.9);
+        }
+        .mobile-bottom-nav .nav-label {
+            display: block;
+            font-size: 0.95rem;
+        }
+        .mobile-bottom-nav .nav-sub {
+            display: block;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+        .mobile-bottom-nav .nav-icon {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 0.1rem;
+        }
+
+        /* Gap fallback removed to avoid double stacking of spacing in nested layouts */
+        .btn-refresh {
+            width: 3rem;
+            min-width: 3rem;
+            padding: 0.35rem 0;
+            text-align: center;
+        }
+        .pill-select .btn-refresh {
+            width: auto;
+        }
+        .rental-detail-row:last-of-type td {
+            border-bottom-color: #e2e8f0;
+        }
+        @media (max-width: 960px) {
+            .hero-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .dashboard-shell {
+                grid-template-columns: 1fr;
+            }
+            .session-panel {
+                position: static;
+            }
+        }
+        @media (max-width: 720px) {
+            .hero-meta {
+                align-items: flex-start;
+            }
+            .app-shell {
+                margin-top: -4.5rem;
+            }
+            .area-tabs button {
+                flex: 1 1 45%;
+            }
+            .area-grid {
+                gap: 20px;
+            }
+            .app-shell.has-mobile-nav {
+                padding-bottom: 6rem;
+            }
+            .mobile-bottom-nav {
+                display: flex;
+            }
+        }
+        @media (max-width: 640px) {
+            .hero {
+                padding-bottom: 4rem;
+            }
+            .card {
+                padding: 1.25rem;
+            }
+            .button-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="hero-legend">
+                <span class="eyebrow">CAREBED PLATFORM</span>
+                <h1>{{ session.token ? '欢迎回来，' + session.displayName : '智慧陪护床运营演示系统' }}</h1>
+                <p>{{ session.token ? '当前会话已激活，可随时执行操作。' : '统一体验覆盖登录、设备、租借、钱包、报修与通知模块。' }}</p>
+            </div>
+            <div class="hero-meta">
+                <div class="chip">Spring Boot · Vue</div>
+                <div class="hero-meta-group">
+                    <span class="chip">REST API</span>
+                    <span class="chip">MQTT Broker</span>
+                    <span class="chip" v-if="logs.length">API 日志 {{ logs.length }}</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="app-shell" :class="{ 'has-mobile-nav': mobileNavVisible }">
+        <article class="card auth-card" v-if="!session.token">
+            <div class="auth-switch">
+                <button type="button" :class="{ active: authCard === 'login' }" @click="switchAuthCard('login')">登录账号</button>
+                <button type="button" :class="{ active: authCard === 'register' }" @click="switchAuthCard('register')">注册账号</button>
+            </div>
+
+            <template v-if="authCard === 'login'">
+                <h2>账号登录</h2>
+                <p>使用已有账号登录，进入客户或运营控制台。</p>
+                <form @submit.prevent="handleLogin" class="stack">
+                    <label>
+                        用户名
+                        <input type="text" v-model="loginForm.username" placeholder="admin" required>
+                    </label>
+                    <label>
+                        密码
+                        <input type="password" v-model="loginForm.password" placeholder="Admin@123" required>
+                    </label>
+                    <button type="submit">登录</button>
+                </form>
+                <p class="auth-hint">
+                    还没有账号？
+                    <button type="button" class="link-button" @click="switchAuthCard('register')">立即注册</button>
+                </p>
+            </template>
+
+            <template v-else>
+                <h2>注册新账号</h2>
+                <p>填写资料即可创建账号，完成后系统会自动为你登录。</p>
+                <form @submit.prevent="handleRegister" class="stack">
+                    <label>
+                        用户名
+                        <input type="text" v-model="registerForm.username" placeholder="family" required>
+                    </label>
+                    <label>
+                        密码
+                        <input type="password" v-model="registerForm.password" placeholder="Family@123" required>
+                    </label>
+                    <label>
+                        角色
+                        <select v-model="registerForm.role">
+                            <option value="FAMILY">陪护家属</option>
+                            <option value="ADMIN">运营管理员</option>
+                        </select>
+                    </label>
+                    <label>
+                        姓名
+                        <input type="text" v-model="registerForm.fullName" placeholder="默认管理员" required>
+                    </label>
+                    <label>
+                        手机号
+                        <input type="tel" v-model="registerForm.phone" placeholder="+8613500000000" required>
+                    </label>
+                    <button type="submit">注册并登录</button>
+                </form>
+                <p class="auth-hint">
+                    已有账号？
+                    <button type="button" class="link-button" @click="switchAuthCard('login')">返回登录</button>
+                </p>
+            </template>
+        </article>
+
+        <template v-else>
+            <div class="dashboard-shell">
+                <aside class="session-panel">
+                    <article class="card" v-if="showTokenCard">
+                        <div class="panel-heading">
+                            <h2>{{ session.displayName }}</h2>
+                            <p>{{ session.role }}</p>
+                        </div>
+                        <p class="token-preview">Token 快照：{{ tokenPreview }}</p>
+                        <details class="token-details">
+                            <summary>展开查看完整 Token</summary>
+                            <code>{{ session.token }}</code>
+                        </details>
+                    </article>
+                    <article class="card" v-if="showWorkspaceCard">
+                        <h3>工作区</h3>
+                        <div class="area-tabs">
+                            <button @click="switchArea('customer')" :class="{ secondary: activeArea !== 'customer' }" v-if="canSeeCustomer">客户门户</button>
+                            <button @click="switchArea('admin')" :class="{ secondary: activeArea !== 'admin' }" v-if="canSeeAdmin">管理后台</button>
+                        </div>
+                        <div class="session-actions">
+                            <button @click="activeArea === 'customer' ? loadCustomerDashboard() : loadAdminDashboard()">刷新当前视图</button>
+                            <button class="secondary" @click="logout">退出登录</button>
+                        </div>
+                        <ul class="session-stats" v-if="sessionHighlights.length">
+                            <li v-for="item in sessionHighlights" :key="item">{{ item }}</li>
+                        </ul>
+                    </article>
+                </aside>
+
+                <section class="area-content">
+                    <section class="area-pane" v-if="activeArea === 'customer' && canSeeCustomer">
+                        <article class="card area-header-card">
+                            <div class="area-header-top">
+                                <h2>客户门户</h2>
+                                <div class="time-indicator">当前北京时间：{{ beijingTime }}</div>
+                            </div>
+                            <p class="area-header-sub">实时同步钱包、租借、报修与消息，协助陪护家属完成自助操作。</p>
+                        </article>
+                        <div class="area-grid">
+                            <article class="card" v-if="showMobileSection('mine')">
+                                <div class="section-title">
+                                    <h3>钱包与充值</h3>
+                                    <button class="btn-refresh" @click="refreshWallet">刷新</button>
+                                </div>
+                                <p v-if="customer.wallet">
+                                    当前余额：<strong>{{ formatNumber(customer.wallet.balance) }} 元</strong>
+                                    <br>
+                                    <span class="muted">最近更新：{{ formatTime(customer.wallet.updatedAt) }}</span>
+                                </p>
+                                <p v-else class="muted">尚未拉取钱包信息，点击刷新即可同步。</p>
+                                <form class="form-inline" style="margin-top:1rem;" @submit.prevent="submitRecharge">
+                                    <label>
+                                        充值金额
+                                        <input type="number" min="1" step="1" v-model.number="customer.rechargeAmount" required>
+                                    </label>
+                                    <button type="submit">充值</button>
+                                </form>
+                                <h4 style="margin-top:1.25rem;">交易记录</h4>
+                                <table v-if="customer.wallet && customer.wallet.transactions.length">
+                                    <thead>
+                                        <tr>
+                                            <th>时间</th>
+                                            <th>类型</th>
+                                            <th>金额</th>
+                                            <th>备注</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="txn in pagedWalletTransactions" :key="txn.id">
+                                            <td>{{ formatTime(txn.occurredAt) }}</td>
+                                            <td>{{ txn.type }}</td>
+                                            <td>{{ formatNumber(txn.amount) }}</td>
+                                            <td>{{ txn.reference || txn.notes }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="pager" v-if="transactionsTotalPages > 1">
+                                    <button type="button" class="secondary" :disabled="pagination.transactions === 1" @click="changePage('transactions', -1, transactionsTotalPages)">上一页</button>
+                                    <span class="pager-info">第 {{ pagination.transactions }} / {{ transactionsTotalPages }} 页</span>
+                                    <button type="button" class="secondary" :disabled="pagination.transactions === transactionsTotalPages" @click="changePage('transactions', 1, transactionsTotalPages)">下一页</button>
+                                </div>
+                                <p v-else class="muted">暂无交易记录。</p>
+                                <h4 style="margin-top:1.25rem;">费用争议</h4>
+                                <form class="stack" @submit.prevent="submitDispute">
+                                    <label>
+                                        订单号
+                                        <input type="text" v-model="customer.disputeForm.orderId" placeholder="租借订单号" required>
+                                    </label>
+                                    <label>
+                                        申诉原因
+                                        <textarea rows="3" v-model="customer.disputeForm.reason" required></textarea>
+                                    </label>
+                                    <button type="submit">提交争议</button>
+                                </form>
+                                <ul class="list-plain" style="margin-top:1rem;">
+                                    <li v-for="dispute in customer.disputes" :key="dispute.id">
+                                        <strong>{{ dispute.orderId }}</strong> · {{ dispute.status }}
+                                        <div class="muted">{{ dispute.reason }}</div>
+                                    </li>
+                                </ul>
+                            </article>
+
+                            <article class="card horizontal-card" v-if="showMobileSection('devices')">
+                                <div class="section-title">
+                                    <h3>设备列表</h3>
+                                    <button class="btn-refresh" @click="refreshCustomerDevices">刷新</button>
+                                </div>
+                                <div class="horizontal-content">
+                                    <p class="muted">展示当前所有设备状态，便于挑选可租借的设备。</p>
+                                    <ul class="list-plain device-list">
+                                        <li v-for="device in pagedCustomerDevices" :key="device.id">
+                                            <span class="status-dot" :class="`status-${device.status}`"></span>
+                                            <div class="device-entry-head">
+                                                <strong>{{ device.deviceCode }}</strong>
+                                                <span class="badge">{{ displayDeviceStatus(device.status) }}</span>
+                                            </div>
+                                            <div class="muted">{{ device.ward }} · 床位 {{ device.bedNumber }}</div>
+                                            <div class="muted">状态：{{ displayLockStatus(device.lockStatus, device.status) }}</div>
+                                        </li>
+                                    </ul>
+                                    <div class="pager" v-if="devicesTotalPages > 1">
+                                        <button type="button" class="secondary" :disabled="pagination.devices === 1" @click="changePage('devices', -1, devicesTotalPages)">上一页</button>
+                                        <span class="pager-info">第 {{ pagination.devices }} / {{ devicesTotalPages }} 页</span>
+                                        <button type="button" class="secondary" :disabled="pagination.devices === devicesTotalPages" @click="changePage('devices', 1, devicesTotalPages)">下一页</button>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="card" v-if="showMobileSection('devices')">
+                                <div class="section-title">
+                                    <h3>快速租借</h3>
+                                </div>
+                                <p v-if="lockedDeviceCode && !isAdmin" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码）</p>
+                                <form class="stack" @submit.prevent="startRental">
+                                    <label>
+                                        设备编号
+                                        <input type="text" v-model="customer.rentalForm.deviceCode" placeholder="BED-0001" required :disabled="!!lockedDeviceCode && !isAdmin">
+                                    </label>
+                                    <label>
+                                        预期租借时长（小时）
+                                        <input type="number" min="1" max="14" v-model.number="customer.rentalForm.expectedHours" required>
+                                    </label>
+                                    <button type="submit">发起租借</button>
+                                </form>
+                            </article>
+
+                            <article class="card" v-if="showMobileSection('orders')">
+                                <div class="section-title">
+                                    <h3>租借记录</h3>
+                                </div>
+                                <table class="table-compact rentals-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="nowrap">订单号</th>
+                                            <th>状态</th>
+                                            <th class="nowrap">时长</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template v-for="rental in pagedCustomerRentals" :key="rental.id">
+                                            <tr>
+                                                <td class="nowrap">{{ rentalShortId(rental.id) }}</td>
+                                                <td>{{ displayRentalStatus(rental.status) }}</td>
+                                                <td class="nowrap">{{ rentalDuration(rental) }}</td>
+                                                <td>
+                                                    <button type="button" class="rental-detail-toggle" @click="toggleRentalDetails(rental.id)">
+                                                        {{ isRentalExpanded(rental.id) ? '收起' : '详情' }}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="isRentalExpanded(rental.id)" class="rental-detail-row">
+                                                <td colspan="4">
+                                                    <div class="rental-detail">
+                                                        <p><strong>完整订单号：</strong>{{ rental.id }}</p>
+                                                        <p><strong>设备编号：</strong>{{ rental.deviceCode }}</p>
+                                                        <p><strong>计费金额：</strong>{{ formatNumber(rental.amount) }} 元</p>
+                                                        <p><strong>开始时间：</strong>{{ formatTime(rental.startedAt) }}</p>
+                                                        <p v-if="rental.expectedEndAt"><strong>预期结束：</strong>{{ formatTime(rental.expectedEndAt) }}</p>
+                                                        <p v-if="rental.endedAt"><strong>归还时间：</strong>{{ formatTime(rental.endedAt) }}</p>
+                                                        <div class="rental-actions">
+                                                            <button v-if="canUnlockRental(rental)" @click="unlockRental(rental)" class="secondary">开锁</button>
+                                                            <button v-if="rental.status === 'ACTIVE'" @click="returnRental(rental.id)" class="secondary">归还</button>
+                                                            <button v-if="rental.status === 'ACTIVE' && canCancelRental(rental)" @click="cancelRentalUser(rental.id)" class="secondary">取消</button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                                <div class="pager" v-if="rentalsTotalPages > 1">
+                                    <button type="button" class="secondary" :disabled="pagination.rentals === 1" @click="changePage('rentals', -1, rentalsTotalPages)">上一页</button>
+                                    <span class="pager-info">第 {{ pagination.rentals }} / {{ rentalsTotalPages }} 页</span>
+                                    <button type="button" class="secondary" :disabled="pagination.rentals === rentalsTotalPages" @click="changePage('rentals', 1, rentalsTotalPages)">下一页</button>
+                                </div>
+                            </article>
+
+                            <article class="card horizontal-card" v-if="showMobileSection('orders')">
+                                <div class="section-title">
+                                    <h3>报修中心</h3>
+                                    <button class="btn-refresh" @click="refreshCustomerRepairs">刷新</button>
+                                </div>
+                                <div class="horizontal-content">
+                                    <form class="stack" @submit.prevent="submitRepairTicket">
+                                        <label>
+                                            租借订单
+                                            <select v-model="customer.repairForm.rentalId" required>
+                                                <option value="">选择租借订单</option>
+                                                <option v-for="rental in customer.rentals" :key="rental.id" :value="rental.id">
+                                                    {{ rental.deviceCode }} · {{ rental.status }}
+                                                </option>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            故障描述
+                                            <textarea rows="3" v-model="customer.repairForm.description" required></textarea>
+                                        </label>
+                                        <label>
+                                            照片链接（逗号分隔，可选）
+                                            <input type="text" v-model="customer.repairForm.photos" placeholder="https://...">
+                                        </label>
+                                        <button type="submit">提交报修</button>
+                                    </form>
+                                    <div class="stack" style="margin:0;">
+                                        <h4 style="margin:0;">报修进度</h4>
+                                        <ul class="list-plain">
+                                            <li v-for="ticket in pagedCustomerRepairs" :key="ticket.id">
+                                                <strong>{{ ticket.deviceCode }}</strong> · {{ ticket.status }}
+                                                <div class="muted">提交时间：{{ formatTime(ticket.createdAt) }}</div>
+                                                <div class="muted" v-if="ticket.resolution">处理说明：{{ ticket.resolution }}</div>
+                                            </li>
+                                        </ul>
+                                        <div class="pager" v-if="repairsTotalPages > 1">
+                                            <button type="button" class="secondary" :disabled="pagination.repairs === 1" @click="changePage('repairs', -1, repairsTotalPages)">上一页</button>
+                                            <span class="pager-info">第 {{ pagination.repairs }} / {{ repairsTotalPages }} 页</span>
+                                            <button type="button" class="secondary" :disabled="pagination.repairs === repairsTotalPages" @click="changePage('repairs', 1, repairsTotalPages)">下一页</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="card horizontal-card" v-if="showMobileSection('messages')">
+                                <div class="section-title">
+                                    <h3>通知中心</h3>
+                                    <div class="pill-select">
+                                        <button @click="customer.messageFilter = 'all'" :class="{ secondary: customer.messageFilter !== 'all' }">全部</button>
+                                        <button @click="customer.messageFilter = 'unread'" :class="{ secondary: customer.messageFilter !== 'unread' }">未读</button>
+                                        <button class="btn-refresh" @click="refreshCustomerMessages">刷新</button>
+                                    </div>
+                                </div>
+                                <div class="horizontal-content">
+                                    <p class="muted">集中展示系统推送通知，可快速筛选未读消息并标记处理。</p>
+                                    <ul class="list-plain">
+                                        <li v-for="msg in pagedCustomerMessages" :key="msg.id">
+                                            <div>
+                                                <strong>{{ msg.title }}</strong>
+                                                <span class="badge">{{ msg.type }}</span>
+                                            </div>
+                                            <div class="muted">{{ formatTime(msg.createdAt) }}</div>
+                                            <p>{{ msg.content }}</p>
+                                            <button v-if="!msg.read" class="secondary" @click="markMessageRead(msg.id)">标记已读</button>
+                                        </li>
+                                    </ul>
+                                    <div class="pager" v-if="messagesTotalPages > 1">
+                                        <button type="button" class="secondary" :disabled="pagination.messages === 1" @click="changePage('messages', -1, messagesTotalPages)">上一页</button>
+                                        <span class="pager-info">第 {{ pagination.messages }} / {{ messagesTotalPages }} 页</span>
+                                        <button type="button" class="secondary" :disabled="pagination.messages === messagesTotalPages" @click="changePage('messages', 1, messagesTotalPages)">下一页</button>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="area-pane" v-if="activeArea === 'admin' && canSeeAdmin">
+                        <article class="card area-header-card">
+                            <div class="area-header-top">
+                                <h2>管理后台</h2>
+                                <div class="time-indicator">当前北京时间：{{ beijingTime }}</div>
+                            </div>
+                            <p class="area-header-sub">掌握运营指标、设备状态与租借流程，支持远程维护与通知广播。</p>
+                        </article>
+                        <div class="area-grid">
+                            <article class="card">
+                                <div class="section-title">
+                                    <h3>运营总览</h3>
+                                    <button class="btn-refresh" @click="refreshAdminOverview">刷新</button>
+                                </div>
+                                <p v-if="!admin.overview" class="muted">点击刷新拉取最新概览指标。</p>
+                                <div v-else class="stack">
+                                    <div>
+                                        <strong>用户</strong>
+                                        <div class="muted">总数 {{ admin.overview.totalUsers }} · 家属 {{ admin.overview.familyUsers }} · 管理员 {{ admin.overview.adminUsers }}</div>
+                                    </div>
+                                    <div>
+                                        <strong>设备</strong>
+                                        <div class="muted">总数 {{ admin.overview.totalDevices }} · 可用 {{ admin.overview.availableDevices }} · 使用中 {{ admin.overview.inUseDevices }} · 维修 {{ admin.overview.maintenanceDevices }} · 离线 {{ admin.overview.offlineDevices }}</div>
+                                    </div>
+                                    <div>
+                                        <strong>租借</strong>
+                                        <div class="muted">进行中 {{ admin.overview.activeRentals }} · 已完成 {{ admin.overview.completedRentals }} · 逾期 {{ admin.overview.overdueRentals }} · 已取消 {{ admin.overview.canceledRentals }}</div>
+                                    </div>
+                                    <div>
+                                        <strong>财务</strong>
+                                        <div class="muted">累计收入 {{ formatNumber(admin.overview.totalRevenue) }} 元 · 钱包余额 {{ formatNumber(admin.overview.walletBalance) }} 元</div>
+                                    </div>
+                                    <div>
+                                        <strong>维修</strong>
+                                        <div class="muted">待处理 {{ admin.overview.openRepairs }} · 已解决 {{ admin.overview.resolvedRepairs }}</div>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="card grid-span-full">
+                                <div class="section-title">
+                                    <h3>趋势分析</h3>
+                                    <button class="btn-refresh" @click="refreshAdminAnalytics">刷新</button>
+                                </div>
+                                <h4>使用趋势</h4>
+                                <table v-if="admin.analytics && admin.analytics.usageTrend.length">
+                                    <thead>
+                                        <tr><th>时间</th><th>数值</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="point in admin.analytics.usageTrend" :key="point.timestamp">
+                                            <td>{{ formatTime(point.timestamp) }}</td>
+                                            <td>{{ formatNumber(point.value) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p v-else class="muted">暂无使用趋势数据。</p>
+                                <h4 style="margin-top:1.25rem;">营收趋势</h4>
+                                <table v-if="admin.analytics && admin.analytics.revenueTrend.length">
+                                    <thead>
+                                        <tr><th>时间</th><th>金额</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="point in admin.analytics.revenueTrend" :key="point.timestamp + '-rev'">
+                                            <td>{{ formatTime(point.timestamp) }}</td>
+                                            <td>{{ formatNumber(point.value) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p v-else class="muted">暂无营收趋势数据。</p>
+                            </article>
+
+                            <article class="card grid-span-full">
+                                <div class="section-title">
+                                    <h3>设备管理</h3>
+                                    <div class="button-row">
+                                        <select v-model="admin.deviceFilter">
+                                            <option value="">全部状态</option>
+                                            <option v-for="status in enums.deviceStatuses" :key="status" :value="status">{{ displayDeviceStatus(status) }}</option>
+                                        </select>
+                                        <button class="btn-refresh" @click="refreshAdminDevices">刷新</button>
+                                    </div>
+                                </div>
+                                <form class="form-inline" @submit.prevent="registerDevice">
+                                    <label>
+                                        设备编号
+                                        <input type="text" v-model="admin.newDevice.deviceCode" placeholder="BED-0008" required>
+                                    </label>
+                                    <label>
+                                        病区
+                                        <input type="text" v-model="admin.newDevice.ward" placeholder="心内科" required>
+                                    </label>
+                                    <label>
+                                        床位号
+                                        <input type="text" v-model="admin.newDevice.bedNumber" placeholder="12A" required>
+                                    </label>
+                                    <button type="submit">登记新设备</button>
+                                </form>
+                                <form class="form-inline" style="margin-top:1rem;" @submit.prevent="updateDevice" v-if="admin.edit.id">
+                                    <label>
+                                        病区
+                                        <input type="text" v-model="admin.edit.ward" required>
+                                    </label>
+                                    <label>
+                                        床位号
+                                        <input type="text" v-model="admin.edit.bedNumber" required>
+                                    </label>
+                                    <label>
+                                        状态
+                                        <select v-model="admin.edit.status">
+                                            <option v-for="status in enums.deviceStatuses" :key="status" :value="status">{{ displayDeviceStatus(status) }}</option>
+                                        </select>
+                                    </label>
+                                    <div class="button-row" style="margin-top:0;">
+                                        <button type="submit">保存更改</button>
+                                        <button type="button" class="secondary" @click="deleteDevice">删除设备</button>
+                                    </div>
+                                </form>
+                                <p v-else class="muted" style="margin-top:1rem;">点击下方列表中的设备即可载入编辑表单。</p>
+                                <table style="margin-top:1rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>编号</th>
+                                            <th>位置</th>
+                                            <th>状态</th>
+                                            <th>锁状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="device in filteredAdminDevices" :key="device.id" @click="selectDeviceForEdit(device)">
+                                            <td>{{ device.deviceCode }}</td>
+                                            <td>{{ device.ward }} · {{ device.bedNumber }}</td>
+                                            <td>{{ displayDeviceStatus(device.status) }}</td>
+                                            <td>{{ displayLockStatus(device.lockStatus, device.status) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </article>
+
+                            <article class="card grid-span-full">
+                                <h3>设备运维动作</h3>
+                                <div class="form-inline">
+                                    <label>
+                                        目标设备
+                                        <select v-model="admin.actionDeviceId">
+                                            <option value="">选择设备</option>
+                                            <option v-for="device in admin.devices" :key="device.id" :value="device.id">{{ device.deviceCode }}</option>
+                                        </select>
+                                    </label>
+                                    <button @click="triggerReboot" type="button">远程重启</button>
+                                </div>
+                                <div class="form-inline" style="margin-top:1rem;">
+                                    <label>
+                                        故障描述
+                                        <input type="text" v-model="admin.faultForm.description" placeholder="床体升降异常">
+                                    </label>
+                                    <button @click="submitFault" type="button">上报故障</button>
+                                </div>
+                            </article>
+
+                            <article class="card grid-span-full">
+                                <div class="section-title">
+                                    <h3>租借订单</h3>
+                                    <div class="button-row">
+                                        <select v-model="admin.rentalStatusFilter">
+                                            <option value="">全部状态</option>
+                                            <option v-for="status in enums.rentalStatuses" :key="status" :value="status">{{ status }}</option>
+                                        </select>
+                                        <button class="btn-refresh" @click="refreshAdminRentals">刷新</button>
+                                    </div>
+                                </div>
+                                <table class="table-compact">
+                                    <thead>
+                                        <tr>
+                                            <th>订单号</th>
+                                            <th>设备</th>
+                                            <th>用户</th>
+                                            <th>状态</th>
+                                            <th>金额</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="rental in filteredAdminRentals" :key="rental.id">
+                                            <td>{{ shortId(rental.id) }}</td>
+                                            <td>{{ rental.deviceCode }}</td>
+                                            <td>{{ shortId(rental.userId) }}</td>
+                                            <td>{{ rental.status }}</td>
+                                            <td>{{ formatNumber(rental.amount) }}</td>
+                                            <td>
+                                                <button v-if="rental.status === 'ACTIVE'" class="secondary" @click="cancelRentalAdmin(rental.id)">取消订单</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </article>
+
+                            <article class="card">
+                                <div class="section-title">
+                                    <h3>费用争议</h3>
+                                    <button class="btn-refresh" @click="refreshDisputes">刷新</button>
+                                </div>
+                                <form class="stack" style="margin-top:1rem;" @submit.prevent="submitDisputeUpdate">
+                                    <label>
+                                        争议单
+                                        <select v-model="admin.disputeUpdate.id" required>
+                                            <option value="">选择争议记录</option>
+                                            <option v-for="dispute in admin.disputes" :key="dispute.id" :value="dispute.id">
+                                                {{ dispute.orderId }} · {{ dispute.status }}
+                                            </option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        状态
+                                        <select v-model="admin.disputeUpdate.status" required>
+                                            <option v-for="status in enums.disputeStatuses" :key="status" :value="status">{{ status }}</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        处理说明
+                                        <textarea rows="3" v-model="admin.disputeUpdate.resolution" required></textarea>
+                                    </label>
+                                    <button type="submit">提交处理结果</button>
+                                </form>
+                                <h4 style="margin-top:1.25rem;">全部争议</h4>
+                                <ul class="list-plain">
+                                    <li v-for="dispute in admin.disputes" :key="dispute.id">
+                                        <strong>{{ dispute.orderId }}</strong> · {{ dispute.status }}
+                                        <div class="muted">原因：{{ dispute.reason }}</div>
+                                        <div class="muted" v-if="dispute.resolution">处理：{{ dispute.resolution }}</div>
+                                    </li>
+                                </ul>
+                            </article>
+
+                            <article class="card">
+                                <div class="section-title">
+                                    <h3>维修工单</h3>
+                                    <button class="btn-refresh" @click="refreshAdminRepairs">刷新</button>
+                                </div>
+                                <form class="stack" style="margin-top:1rem;" @submit.prevent="submitRepairUpdate">
+                                    <label>
+                                        工单
+                                        <select v-model="admin.repairUpdate.id" required>
+                                            <option value="">选择维修工单</option>
+                                            <option v-for="ticket in admin.repairs" :key="ticket.id" :value="ticket.id">
+                                                {{ ticket.deviceCode }} · {{ ticket.status }}
+                                            </option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        状态
+                                        <select v-model="admin.repairUpdate.status" required>
+                                            <option v-for="status in enums.repairStatuses" :key="status" :value="status">{{ status }}</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        处理说明
+                                        <textarea rows="3" v-model="admin.repairUpdate.resolution" required></textarea>
+                                    </label>
+                                    <button type="submit">更新工单</button>
+                                </form>
+                                <h4 style="margin-top:1.25rem;">工单列表</h4>
+                                <ul class="list-plain">
+                                    <li v-for="ticket in admin.repairs" :key="ticket.id">
+                                        <strong>{{ ticket.deviceCode }}</strong> · {{ ticket.status }}
+                                        <div class="muted">描述：{{ ticket.description }}</div>
+                                        <div class="muted">创建：{{ formatTime(ticket.createdAt) }}</div>
+                                    </li>
+                                </ul>
+                            </article>
+
+                            <article class="card">
+                                <div class="section-title">
+                                    <h3>通知广播</h3>
+                                    <button class="btn-refresh" @click="refreshAdminMessages">刷新</button>
+                                </div>
+                                <ul class="list-plain" style="margin-top:1rem;">
+                                    <li v-for="msg in admin.adminMessages" :key="msg.id">
+                                        <strong>{{ msg.title }}</strong> · {{ msg.type }}
+                                        <div class="muted">{{ formatTime(msg.createdAt) }}</div>
+                                        <p>{{ msg.content }}</p>
+                                    </li>
+                                </ul>
+                            </article>
+
+                            <article class="card">
+                                <div class="section-title">
+                                    <h3>用户列表</h3>
+                                    <button class="btn-refresh" @click="refreshUsers">刷新</button>
+                                </div>
+                                <table style="margin-top:1rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>姓名</th>
+                                            <th>角色</th>
+                                            <th>手机号</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="user in admin.users" :key="user.id">
+                                            <td>{{ user.fullName || user.username }}</td>
+                                            <td>{{ user.role }}</td>
+                                            <td>{{ user.phone || '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </article>
+                        </div>
+                    </section>
+                </section>
+            </div>
+
+            <section class="log-grid" v-if="showLogCards">
+                <article class="card log-card">
+                    <h2>API 请求日志</h2>
+                    <pre>{{ logs.slice().reverse().join('\n') || '暂无请求记录' }}</pre>
+                </article>
+                <article class="card log-card">
+                    <h2>MQTT 日志</h2>
+                    <pre>{{ mqttLogs.slice().reverse().join('\n') || '暂无MQTT记录' }}</pre>
+                </article>
+            </section>
+
+            <nav class="mobile-bottom-nav" v-if="mobileNavVisible">
+                <button :class="{ active: mobileTab === 'devices' }" @click="switchMobileTab('devices')">
+                    <i class="fa-solid fa-bed nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">设备</span>
+                    <span class="nav-sub">状态</span>
+                </button>
+                <button :class="{ active: mobileTab === 'orders' }" @click="switchMobileTab('orders')">
+                    <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">订单</span>
+                    <span class="nav-sub">租借·报修</span>
+                </button>
+                <button :class="{ active: mobileTab === 'messages' }" @click="switchMobileTab('messages')">
+                    <i class="fa-solid fa-bell nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">消息</span>
+                    <span class="nav-sub">通知</span>
+                </button>
+                <button :class="{ active: mobileTab === 'mine' }" @click="switchMobileTab('mine')">
+                    <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">我的</span>
+                    <span class="nav-sub">钱包</span>
+                </button>
+            </nav>
+        </template>
+    </main>
+</div>
+
+<script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script>
+const apiBase = 'https://msas.absozero.cn';
+
+const defaultLoginForm = () => ({
+    username: 'admin',
+    password: 'Admin@123'
+});
+
+const defaultRegisterForm = () => ({
+    username: 'family',
+    password: 'Family@123',
+    role: 'FAMILY',
+    fullName: '默认家属',
+    phone: '+8613500000000'
+});
+
+const defaultCustomerState = () => ({
+    devices: [],
+    rentals: [],
+    wallet: null,
+    rechargeAmount: 200,
+    disputeForm: { orderId: '', reason: '' },
+    disputes: [],
+    messages: [],
+    messageFilter: 'all',
+    repairs: [],
+    repairForm: { rentalId: '', description: '', photos: '' },
+    rentalForm: { deviceCode: 'BED-0001', expectedHours: 4 }
+});
+
+const defaultAdminState = () => ({
+    overview: null,
+    analytics: null,
+    devices: [],
+    deviceFilter: '',
+    newDevice: { deviceCode: '', ward: '', bedNumber: '' },
+    edit: { id: '', deviceCode: '', ward: '', bedNumber: '', status: 'AVAILABLE' },
+    actionDeviceId: '',
+    faultForm: { description: '' },
+    rentals: [],
+    rentalStatusFilter: '',
+    disputes: [],
+    disputeUpdate: { id: '', status: 'IN_REVIEW', resolution: '' },
+    repairs: [],
+    repairUpdate: { id: '', status: 'IN_PROGRESS', resolution: '' },
+    users: [],
+    adminMessages: []
+});
+
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            authCard: 'login',
+            loginForm: defaultLoginForm(),
+            registerForm: defaultRegisterForm(),
+            session: {
+                token: null,
+                role: null,
+                displayName: null
+            },
+            activeArea: 'customer',
+            customerLoaded: false,
+            adminLoaded: false,
+            enums: {
+                deviceStatuses: ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OFFLINE'],
+                rentalStatuses: ['ACTIVE', 'COMPLETED', 'OVERDUE', 'CANCELED'],
+                disputeStatuses: ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'],
+                repairStatuses: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED']
+            },
+            customer: defaultCustomerState(),
+            admin: defaultAdminState(),
+            logs: [],
+            mqttLogs: [],
+            deviceSnapshot: {},
+            deviceSnapshotInitialized: false,
+            beijingTime: '',
+            refreshIntervalMs: 30000,
+            autoRefreshTimer: null,
+            clockTimer: null,
+            isAutoRefreshing: false,
+            now: new Date(),
+            expandedRentals: [],
+            lockedDeviceCode: '',
+            mobileTab: 'devices',
+            isMobile: false,
+            pageSize: 6,
+            pagination: {
+                devices: 1,
+                rentals: 1,
+                repairs: 1,
+                messages: 1,
+                transactions: 1
+            }
+        };
+    },
+    computed: {
+        canSeeCustomer() {
+            return this.session.role === 'FAMILY' || this.session.role === 'ADMIN';
+        },
+        canSeeAdmin() {
+            return this.session.role === 'ADMIN';
+        },
+        isAdmin() {
+            return this.session.role === 'ADMIN';
+        },
+        filteredCustomerMessages() {
+            if (this.customer.messageFilter === 'unread') {
+                return this.customer.messages.filter(msg => !msg.read);
+            }
+            return this.customer.messages;
+        },
+        pagedCustomerMessages() {
+            return this.paginateList(this.filteredCustomerMessages, this.pagination.messages, this.pageSize);
+        },
+        pagedWalletTransactions() {
+            const txns = this.customer.wallet && Array.isArray(this.customer.wallet.transactions)
+                ? this.customer.wallet.transactions
+                : [];
+            return this.paginateList(txns, this.pagination.transactions, this.pageSize);
+        },
+        filteredAdminDevices() {
+            if (!this.admin.deviceFilter) {
+                return this.admin.devices;
+            }
+            return this.admin.devices.filter(device => device.status === this.admin.deviceFilter);
+        },
+        pagedCustomerDevices() {
+            return this.paginateList(this.customer.devices, this.pagination.devices, this.pageSize);
+        },
+        pagedCustomerRentals() {
+            return this.paginateList(this.customer.rentals, this.pagination.rentals, this.pageSize);
+        },
+        pagedCustomerRepairs() {
+            return this.paginateList(this.customer.repairs, this.pagination.repairs, this.pageSize);
+        },
+        filteredAdminRentals() {
+            if (!this.admin.rentalStatusFilter) {
+                return this.admin.rentals;
+            }
+            return this.admin.rentals.filter(rental => rental.status === this.admin.rentalStatusFilter);
+        },
+        tokenPreview() {
+            if (!this.session.token) {
+                return '未登录';
+            }
+            const token = this.session.token;
+            if (token.length <= 15) {
+                return token;
+            }
+            return `${token.slice(0, 6)}...${token.slice(-4)}`;
+        },
+        sessionHighlights() {
+            const items = [];
+            if (this.activeArea === 'customer') {
+                if (this.customer.devices.length) {
+                    items.push(`可查看设备 ${this.customer.devices.length} 台`);
+                }
+                if (this.customer.wallet) {
+                    items.push(`余额 ${this.formatNumber(this.customer.wallet.balance)} 元`);
+                }
+                if (this.customer.rentals.length) {
+                    items.push(`租借订单 ${this.customer.rentals.length} 个`);
+                }
+            } else {
+                if (this.admin.devices.length) {
+                    items.push(`设备总数 ${this.admin.devices.length}`);
+                }
+                if (this.admin.rentals.length) {
+                    items.push(`租借订单 ${this.admin.rentals.length}`);
+                }
+                if (this.admin.users.length) {
+                    items.push(`用户数 ${this.admin.users.length}`);
+                }
+            }
+            return items;
+        },
+        mobileNavVisible() {
+            return this.session.token && this.activeArea === 'customer' && this.isMobile;
+        },
+        showWorkspaceCard() {
+            if (this.activeArea === 'admin') {
+                return true;
+            }
+            return !this.isMobile || this.mobileTab === 'mine';
+        },
+        showLogCards() {
+            if (this.activeArea === 'admin') {
+                return true;
+            }
+            return !this.isMobile || this.mobileTab === 'mine';
+        },
+        showTokenCard() {
+            if (this.activeArea === 'admin') {
+                return true;
+            }
+            return !this.isMobile || this.mobileTab === 'mine';
+        },
+        devicesTotalPages() {
+            return this.totalPages(this.customer.devices);
+        },
+        rentalsTotalPages() {
+            return this.totalPages(this.customer.rentals);
+        },
+        repairsTotalPages() {
+            return this.totalPages(this.customer.repairs);
+        },
+        messagesTotalPages() {
+            return this.totalPages(this.filteredCustomerMessages);
+        },
+        transactionsTotalPages() {
+            const txns = this.customer.wallet && Array.isArray(this.customer.wallet.transactions)
+                ? this.customer.wallet.transactions
+                : [];
+            return this.totalPages(txns);
+        }
+    },
+    methods: {
+        switchAuthCard(mode) {
+            if (this.authCard === mode) {
+                return;
+            }
+            this.authCard = mode;
+        },
+        handleResize() {
+            const query = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+            this.isMobile = query ? query.matches : window.innerWidth <= 720;
+        },
+        switchMobileTab(tab) {
+            if (this.mobileTab === tab) {
+                return;
+            }
+            this.mobileTab = tab;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        showMobileSection(sectionKey) {
+            if (!this.isMobile) {
+                return true;
+            }
+            return this.mobileTab === sectionKey;
+        },
+        paginateList(list, page, size) {
+            if (!Array.isArray(list) || !list.length) {
+                return [];
+            }
+            const start = Math.max(0, (page - 1) * size);
+            return list.slice(start, start + size);
+        },
+        totalPages(list) {
+            if (!Array.isArray(list) || !list.length) {
+                return 1;
+            }
+            return Math.max(1, Math.ceil(list.length / this.pageSize));
+        },
+        changePage(key, delta, total) {
+            const current = this.pagination[key] || 1;
+            const next = Math.min(Math.max(1, current + delta), total || 1);
+            this.pagination[key] = next;
+        },
+        captureLockedDeviceFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                const code = params.get('id') || params.get('device');
+                if (!code) {
+                    return;
+                }
+                const normalized = String(code).trim().toUpperCase();
+                if (!normalized) {
+                    return;
+                }
+                this.lockedDeviceCode = normalized;
+                this.customer.rentalForm.deviceCode = normalized;
+            } catch (e) {
+                console.warn('parse url failed', e);
+            }
+        },
+        saveSession() {
+            try {
+                localStorage.setItem('carebed-session', JSON.stringify(this.session));
+            } catch (e) {
+                console.warn('session persist failed', e);
+            }
+        },
+        clearSession() {
+            try {
+                localStorage.removeItem('carebed-session');
+            } catch (e) {
+                console.warn('session clear failed', e);
+            }
+        },
+        loadSessionFromStorage() {
+            try {
+                const raw = localStorage.getItem('carebed-session');
+                if (!raw) {
+                    return false;
+                }
+                const data = JSON.parse(raw);
+                if (!data || !data.token) {
+                    return false;
+                }
+                this.session = {
+                    token: data.token,
+                    role: data.role,
+                    displayName: data.displayName
+                };
+                this.activeArea = this.session.role === 'ADMIN' ? 'admin' : 'customer';
+                this.afterLogin(true);
+                return true;
+            } catch (e) {
+                console.warn('session restore failed', e);
+                return false;
+            }
+        },
+        async handleLogin() {
+            const payload = {
+                username: this.loginForm.username,
+                password: this.loginForm.password
+            };
+            const result = await this.request(`${apiBase}/api/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (result) {
+                this.applyAuthResult(result, 'login');
+            }
+        },
+        async handleRegister() {
+            const payload = {
+                username: this.registerForm.username,
+                password: this.registerForm.password,
+                role: this.registerForm.role,
+                fullName: this.registerForm.fullName,
+                phone: this.registerForm.phone
+            };
+            const result = await this.request(`${apiBase}/api/auth/register`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (result) {
+                this.applyAuthResult(result, 'register');
+            }
+        },
+        applyAuthResult(result, mode) {
+            this.session.token = result.token;
+            this.session.role = result.role;
+            this.session.displayName = result.displayName;
+            const message = mode === 'register' ? '注册成功' : '登录成功';
+            this.log(`${message}，角色：${result.role}`);
+            this.saveSession();
+            this.afterLogin();
+        },
+        afterLogin(fromRestore = false) {
+            this.authCard = 'login';
+            this.loginForm = defaultLoginForm();
+            this.registerForm = defaultRegisterForm();
+            this.activeArea = this.session.role === 'ADMIN' ? 'admin' : 'customer';
+            this.customerLoaded = false;
+            this.adminLoaded = false;
+            this.expandedRentals = [];
+            this.mobileTab = 'devices';
+            if (this.lockedDeviceCode && !this.isAdmin) {
+                this.customer.rentalForm.deviceCode = this.lockedDeviceCode;
+            }
+            if (this.canSeeCustomer) {
+                this.loadCustomerDashboard();
+            }
+            if (this.canSeeAdmin) {
+                this.loadAdminDashboard();
+            }
+            if (this.canSeeAdmin) {
+                this.refreshMqttLogs();
+            }
+            this.refreshLogs();
+            if (!fromRestore) {
+                this.log('会话已激活');
+            }
+        },
+        logout() {
+            this.session = { token: null, role: null, displayName: null };
+            this.clearSession();
+            this.activeArea = 'customer';
+            this.customerLoaded = false;
+            this.adminLoaded = false;
+            this.customer = defaultCustomerState();
+            this.admin = defaultAdminState();
+            if (this.lockedDeviceCode) {
+                this.customer.rentalForm.deviceCode = this.lockedDeviceCode;
+            }
+            this.loginForm = defaultLoginForm();
+            this.registerForm = defaultRegisterForm();
+            this.authCard = 'login';
+            this.expandedRentals = [];
+            this.mobileTab = 'devices';
+            this.logs = [];
+            this.log('已退出登录');
+        },
+        switchArea(area) {
+            if (area === 'customer' && !this.canSeeCustomer) {
+                return;
+            }
+            if (area === 'admin' && !this.canSeeAdmin) {
+                return;
+            }
+            this.activeArea = area;
+            if (area === 'customer') {
+                if (this.isMobile) {
+                    this.mobileTab = 'devices';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                this.loadCustomerDashboard();
+            }
+            if (area === 'admin') {
+                this.loadAdminDashboard();
+            }
+        },
+        toggleRentalDetails(id) {
+            if (!id) {
+                return;
+            }
+            if (this.isRentalExpanded(id)) {
+                this.expandedRentals = this.expandedRentals.filter(item => item !== id);
+            } else {
+                this.expandedRentals = [...this.expandedRentals, id];
+            }
+        },
+        isRentalExpanded(id) {
+            return this.expandedRentals.includes(id);
+        },
+        updateBeijingTime() {
+            const now = new Date();
+            this.now = now;
+            this.beijingTime = now.toLocaleString('zh-CN', {
+                hour12: false,
+                timeZone: 'Asia/Shanghai'
+            });
+        },
+        startRealtimeUpdates() {
+            if (this.clockTimer) {
+                clearInterval(this.clockTimer);
+            }
+            if (this.autoRefreshTimer) {
+                clearInterval(this.autoRefreshTimer);
+            }
+            this.updateBeijingTime();
+            this.clockTimer = setInterval(() => this.updateBeijingTime(), 1000);
+            this.autoRefreshTimer = setInterval(() => this.refreshDashboards(), this.refreshIntervalMs);
+        },
+        stopRealtimeUpdates() {
+            if (this.clockTimer) {
+                clearInterval(this.clockTimer);
+                this.clockTimer = null;
+            }
+            if (this.autoRefreshTimer) {
+                clearInterval(this.autoRefreshTimer);
+                this.autoRefreshTimer = null;
+            }
+        },
+        async refreshDashboards() {
+            if (!this.session.token) {
+                return;
+            }
+            if (this.isAutoRefreshing) {
+                return;
+            }
+            this.isAutoRefreshing = true;
+            try {
+                const tasks = [];
+                if (this.canSeeCustomer) {
+                    tasks.push(this.loadCustomerDashboard());
+                }
+                if (this.canSeeAdmin) {
+                    tasks.push(this.loadAdminDashboard());
+                }
+                tasks.push(this.refreshLogs());
+                tasks.push(this.refreshMqttLogs());
+                await Promise.all(tasks);
+            } finally {
+                this.isAutoRefreshing = false;
+            }
+        },
+        async loadCustomerDashboard() {
+            if (!this.session.token) {
+                return;
+            }
+            await Promise.all([
+                this.refreshCustomerDevices(),
+                this.refreshCustomerRentals(),
+                this.refreshWallet(),
+                this.refreshCustomerMessages(),
+                this.refreshCustomerRepairs()
+            ]);
+            this.customerLoaded = true;
+        },
+        async refreshCustomerDevices() {
+            const data = await this.request(`${apiBase}/api/devices`);
+            if (Array.isArray(data)) {
+                let devices = data;
+                if (this.lockedDeviceCode && !this.isAdmin) {
+                    const matchIndex = devices.findIndex(d => (d.deviceCode || '').toUpperCase() === this.lockedDeviceCode);
+                    if (matchIndex > 0) {
+                        const [match] = devices.splice(matchIndex, 1);
+                        devices = [match, ...devices];
+                    }
+                }
+                this.customer.devices = devices;
+                this.pagination.devices = 1;
+                this.log(`获取到 ${data.length} 台设备`);
+            }
+        },
+        async refreshCustomerRentals() {
+            const data = await this.request(`${apiBase}/api/rentals/me`);
+            if (Array.isArray(data)) {
+                this.customer.rentals = data;
+                this.pagination.rentals = 1;
+                const activeIds = data.filter(rental => rental.status === 'ACTIVE').map(rental => rental.id);
+                const preserved = this.expandedRentals.filter(id =>
+                    this.customer.rentals.some(rental => rental.id === id)
+                );
+                this.expandedRentals = Array.from(new Set([...preserved, ...activeIds]));
+            }
+        },
+        async refreshWallet() {
+            const data = await this.request(`${apiBase}/api/wallet`);
+            if (data) {
+                this.customer.wallet = data;
+                this.pagination.transactions = 1;
+            }
+        },
+        async submitRecharge() {
+            if (this.customer.rechargeAmount <= 0) {
+                alert('充值金额需大于0');
+                return;
+            }
+            const data = await this.request(`${apiBase}/api/wallet/recharge`, {
+                method: 'POST',
+                body: JSON.stringify({ amount: this.customer.rechargeAmount })
+            });
+            if (data) {
+                this.customer.wallet = data;
+                this.log('充值成功');
+            }
+        },
+        async submitDispute() {
+            if (!this.customer.disputeForm.orderId || !this.customer.disputeForm.reason) {
+                alert('请填写争议信息');
+                return;
+            }
+            const data = await this.request(`${apiBase}/api/wallet/disputes`, {
+                method: 'POST',
+                body: JSON.stringify(this.customer.disputeForm)
+            });
+            if (data) {
+                this.customer.disputes.unshift(data);
+                this.customer.disputeForm = { orderId: '', reason: '' };
+                this.log('已提交费用争议');
+            }
+        },
+        async refreshCustomerMessages() {
+            const data = await this.request(`${apiBase}/api/messages`);
+            if (Array.isArray(data)) {
+                this.customer.messages = data;
+                this.pagination.messages = 1;
+            }
+        },
+        async markMessageRead(id) {
+            const result = await this.request(`${apiBase}/api/messages/${id}/read`, { method: 'POST' });
+            if (result) {
+                this.customer.messages = this.customer.messages.map(msg =>
+                    msg.id === id ? { ...msg, read: true } : msg
+                );
+            }
+        },
+        async refreshCustomerRepairs() {
+            const data = await this.request(`${apiBase}/api/repairs/me`);
+            if (Array.isArray(data)) {
+                this.customer.repairs = data;
+                this.pagination.repairs = 1;
+            }
+        },
+        async submitRepairTicket() {
+            if (!this.customer.repairForm.rentalId || !this.customer.repairForm.description) {
+                alert('请完善报修信息');
+                return;
+            }
+            const photos = this.customer.repairForm.photos
+                ? this.customer.repairForm.photos.split(',').map(item => item.trim()).filter(Boolean)
+                : [];
+            const payload = {
+                rentalId: this.customer.repairForm.rentalId,
+                description: this.customer.repairForm.description,
+                photos
+            };
+            const data = await this.request(`${apiBase}/api/repairs`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                await this.refreshCustomerRepairs();
+                this.log('报修工单已创建');
+                this.customer.repairForm = { rentalId: '', description: '', photos: '' };
+            }
+        },
+        async startRental() {
+            const ok = confirm(`确认发起租借吗？设备：${this.customer.rentalForm.deviceCode || '未填写'}`);
+            if (!ok) {
+                return;
+            }
+            const payload = {
+                deviceCode: this.customer.rentalForm.deviceCode,
+                expectedHours: this.customer.rentalForm.expectedHours
+            };
+            const data = await this.request(`${apiBase}/api/rentals/start`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                await this.refreshCustomerRentals();
+                await this.refreshCustomerDevices();
+                this.log(`租借成功：${data.id}`);
+                alert('租借成功，请到订单界面查看');
+            }
+        },
+        async returnRental(id) {
+            const ok = confirm('确认归还该租借订单吗？');
+            if (!ok) {
+                return;
+            }
+            await this.refreshCustomerDevices();
+            const rental = this.customer.rentals.find(item => item.id === id);
+            const device = rental
+                ? this.customer.devices.find(d => d.deviceCode === rental.deviceCode || d.id === rental.deviceId)
+                : null;
+            if (device && device.lockStatus && device.lockStatus !== 'LOCKED') {
+                alert('请先关闭设备锁，并等待同步后再归还。');
+                return;
+            }
+            const data = await this.request(`${apiBase}/api/rentals/${id}/return`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    conditionNotes: '用户归还确认',
+                    lockConfirmed: true
+                })
+            });
+            if (data) {
+                await this.refreshCustomerRentals();
+                await this.refreshCustomerDevices();
+                this.log(`已归还订单：${data.id}`);
+            }
+        },
+        async unlockRental(rental) {
+            if (!rental) {
+                alert('未找到订单信息');
+                return;
+            }
+            if (!rental.deviceId) {
+                alert('该订单缺少设备编号，无法开锁');
+                return;
+            }
+            const ok = confirm(`确认发送开锁指令给设备：${rental.deviceCode || rental.deviceId} 吗？`);
+            if (!ok) {
+                return;
+            }
+            const result = await this.request(`${apiBase}/api/devices/${rental.deviceId}/unlock`, { method: 'POST' });
+            if (result) {
+                const target = rental.deviceCode || rental.deviceId;
+                this.log(`已发送开锁指令：${target}`);
+                this.logMqtt(`UNLOCK -> ${target}`);
+                alert('开锁指令已发送，请稍候查看设备状态。');
+            }
+        },
+        async cancelRentalUser(id) {
+            const rental = this.customer.rentals.find(item => item.id === id);
+            if (!this.canCancelRental(rental)) {
+                alert('租借开始超过5分钟，已无法取消，如需协助请联系管理员。');
+                return;
+            }
+            const result = await this.cancelRentalOrder(id);
+            if (result) {
+                await this.refreshCustomerRentals();
+                this.log(`已取消订单：${id}`);
+            }
+        },
+        async cancelRentalOrder(id) {
+            return await this.request(`${apiBase}/api/rentals/${id}/cancel`, { method: 'POST' });
+        },
+        async loadAdminDashboard() {
+            if (!this.session.token) {
+                return;
+            }
+            await Promise.all([
+                this.refreshAdminOverview(),
+                this.refreshAdminAnalytics(),
+                this.refreshAdminDevices(),
+                this.refreshAdminRentals(),
+                this.refreshDisputes(),
+                this.refreshAdminRepairs(),
+                this.refreshUsers(),
+                this.refreshAdminMessages()
+            ]);
+            this.adminLoaded = true;
+        },
+        async refreshAdminOverview() {
+            const data = await this.request(`${apiBase}/api/admin/overview`);
+            if (data) {
+                this.admin.overview = data;
+            }
+        },
+        async refreshAdminAnalytics() {
+            const data = await this.request(`${apiBase}/api/admin/analytics`);
+            if (data) {
+                this.admin.analytics = data;
+            }
+        },
+        async refreshAdminDevices() {
+            const data = await this.request(`${apiBase}/api/devices`);
+            if (Array.isArray(data)) {
+                // 首次加载仅建立快照，避免一次性刷屏
+                if (!this.deviceSnapshotInitialized) {
+                    this.deviceSnapshot = Object.fromEntries(data.map(d => [d.id, {
+                        onlineStatus: d.onlineStatus,
+                        lastHeartbeat: d.lastHeartbeat
+                    }]));
+                    this.deviceSnapshotInitialized = true;
+                } else {
+                    const nextSnapshot = {};
+                    for (const device of data) {
+                        const prev = this.deviceSnapshot[device.id];
+                        if (prev) {
+                            if (prev.onlineStatus !== device.onlineStatus) {
+                                const tip = device.onlineStatus === 'ONLINE' ? '设备上线' : '设备离线';
+                                this.logMqtt(`${tip}：${device.deviceCode}`);
+                            }
+                            if (prev.lastHeartbeat !== device.lastHeartbeat && device.lastHeartbeat) {
+                                const lock = device.lockStatus || 'UNKNOWN';
+                                const batt = device.batteryLevel ?? 'N/A';
+                                this.logMqtt(`心跳 ${device.deviceCode} · 电量${batt}% · 锁${lock}`);
+                            }
+                        }
+                        nextSnapshot[device.id] = {
+                            onlineStatus: device.onlineStatus,
+                            lastHeartbeat: device.lastHeartbeat
+                        };
+                    }
+                    this.deviceSnapshot = nextSnapshot;
+                }
+
+                this.admin.devices = data;
+                if (this.admin.edit.id) {
+                    const current = data.find(device => device.id === this.admin.edit.id);
+                    if (!current) {
+                        this.admin.edit = { id: '', deviceCode: '', ward: '', bedNumber: '', status: 'AVAILABLE' };
+                    } else {
+                        this.selectDeviceForEdit(current);
+                    }
+                }
+            }
+        },
+        selectDeviceForEdit(device) {
+            this.admin.edit = {
+                id: device.id,
+                deviceCode: device.deviceCode,
+                ward: device.ward,
+                bedNumber: device.bedNumber,
+                status: device.status
+            };
+            this.admin.actionDeviceId = device.id;
+        },
+        async registerDevice() {
+            const payload = this.admin.newDevice;
+            const data = await this.request(`${apiBase}/api/devices`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                this.log(`设备已登记：${data.deviceCode}`);
+                this.admin.newDevice = { deviceCode: '', ward: '', bedNumber: '' };
+                await this.refreshAdminDevices();
+            }
+        },
+        async updateDevice() {
+            if (!this.admin.edit.id) {
+                alert('请先选择设备');
+                return;
+            }
+            const payload = {
+                ward: this.admin.edit.ward,
+                bedNumber: this.admin.edit.bedNumber,
+                status: this.admin.edit.status
+            };
+            const data = await this.request(`${apiBase}/api/devices/${this.admin.edit.id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                this.log('设备信息已更新');
+                await this.refreshAdminDevices();
+            }
+        },
+        async deleteDevice() {
+            if (!this.admin.edit.id) {
+                alert('请先选择设备');
+                return;
+            }
+            const confirmed = confirm(`确定要删除设备 ${this.admin.edit.deviceCode || ''} 吗？此操作不可恢复。`);
+            if (!confirmed) {
+                return;
+            }
+            const result = await this.request(`${apiBase}/api/devices/${this.admin.edit.id}`, {
+                method: 'DELETE'
+            });
+            if (result) {
+                this.log('设备已删除');
+                this.admin.edit = { id: '', deviceCode: '', ward: '', bedNumber: '', status: 'AVAILABLE' };
+                this.admin.actionDeviceId = '';
+                await this.refreshAdminDevices();
+            }
+        },
+        async triggerReboot() {
+            if (!this.admin.actionDeviceId) {
+                alert('请选择设备');
+                return;
+            }
+            const result = await this.request(`${apiBase}/api/devices/${this.admin.actionDeviceId}/reboot`, { method: 'POST' });
+            if (result) {
+                this.log('已触发设备重启');
+                this.logMqtt(`REBOOT -> ${this.admin.actionDeviceId}`);
+            }
+        },
+        async submitFault() {
+            if (!this.admin.actionDeviceId) {
+                alert('请选择设备');
+                return;
+            }
+            if (!this.admin.faultForm.description) {
+                alert('请填写故障描述');
+                return;
+            }
+            const payload = { description: this.admin.faultForm.description };
+            const data = await this.request(`${apiBase}/api/devices/${this.admin.actionDeviceId}/faults`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                this.log('故障已上报');
+                this.admin.faultForm.description = '';
+                await this.refreshAdminDevices();
+            }
+        },
+        async refreshAdminRentals() {
+            const data = await this.request(`${apiBase}/api/rentals`);
+            if (Array.isArray(data)) {
+                this.admin.rentals = data;
+            }
+        },
+        async cancelRentalAdmin(id) {
+            const result = await this.cancelRentalOrder(id);
+            if (result) {
+                await this.refreshAdminRentals();
+                this.log(`管理员取消订单：${id}`);
+            }
+        },
+        async refreshDisputes() {
+            const data = await this.request(`${apiBase}/api/wallet/disputes`);
+            if (Array.isArray(data)) {
+                this.admin.disputes = data;
+            }
+        },
+        async submitDisputeUpdate() {
+            if (!this.admin.disputeUpdate.id) {
+                alert('请选择争议单');
+                return;
+            }
+            const payload = {
+                status: this.admin.disputeUpdate.status,
+                resolution: this.admin.disputeUpdate.resolution
+            };
+            const data = await this.request(`${apiBase}/api/wallet/disputes/${this.admin.disputeUpdate.id}`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                await this.refreshDisputes();
+                this.log('已更新争议处理结果');
+                this.admin.disputeUpdate.resolution = '';
+            }
+        },
+        async refreshAdminRepairs() {
+            const data = await this.request(`${apiBase}/api/repairs`);
+            if (Array.isArray(data)) {
+                this.admin.repairs = data;
+            }
+        },
+        async submitRepairUpdate() {
+            if (!this.admin.repairUpdate.id) {
+                alert('请选择工单');
+                return;
+            }
+            const payload = {
+                status: this.admin.repairUpdate.status,
+                resolution: this.admin.repairUpdate.resolution
+            };
+            const data = await this.request(`${apiBase}/api/repairs/${this.admin.repairUpdate.id}`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            if (data) {
+                await this.refreshAdminRepairs();
+                this.log('维修工单已更新');
+                this.admin.repairUpdate.resolution = '';
+            }
+        },
+        async refreshUsers() {
+            const data = await this.request(`${apiBase}/api/auth/users`);
+            if (Array.isArray(data)) {
+                this.admin.users = data;
+            }
+        },
+        async refreshAdminMessages() {
+            const data = await this.request(`${apiBase}/api/messages/admin`);
+            if (Array.isArray(data)) {
+                this.admin.adminMessages = data;
+            }
+        },
+        async refreshLogs() {
+            if (!this.session.token) {
+                this.logs = [];
+                return;
+            }
+            const data = await this.request(`${apiBase}/api/logs`);
+            if (Array.isArray(data)) {
+                this.logs = data.map(entry => {
+                    const ts = entry.createdAt ? new Date(entry.createdAt) : new Date();
+                    const formatted = ts.toLocaleString('zh-CN', { hour12: false });
+                    const suffix = entry.details ? ` · ${entry.details}` : '';
+                    const actor = entry.actorName || '系统';
+                    return `[${formatted}] ${actor} · ${entry.action}${suffix}`;
+                });
+            }
+        },
+        async refreshMqttLogs() {
+            if (!this.session.token || !this.canSeeAdmin) {
+                this.mqttLogs = [];
+                return;
+            }
+            const data = await this.request(`${apiBase}/api/mqtt/logs`);
+            if (Array.isArray(data)) {
+                this.mqttLogs = data.map(entry => {
+                    const ts = entry.createdAt ? new Date(entry.createdAt) : new Date();
+                    const formatted = ts.toLocaleString('zh-CN', { hour12: false });
+                    const dir = entry.direction || '-';
+                    const topic = entry.topic || '-';
+                    const device = entry.deviceCode ? ` · ${entry.deviceCode}` : '';
+                    const payload = entry.payload || '';
+                    return `[${formatted}] ${dir} ${topic}${device} · ${payload}`;
+                });
+            }
+        },
+        async request(url, options = {}) {
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                };
+                if (this.session.token && !headers['X-Auth-Token']) {
+                    headers['X-Auth-Token'] = this.session.token;
+                }
+                const opts = { ...options, headers };
+                if (!opts.method) {
+                    opts.method = opts.body ? 'POST' : 'GET';
+                }
+                if (opts.method === 'GET' && opts.body) {
+                    delete opts.body;
+                }
+                this.log(`请求：${opts.method} ${url}`);
+                const res = await fetch(url, opts);
+                const text = await res.text();
+                let json = null;
+                if (text) {
+                    try {
+                        json = JSON.parse(text);
+                    } catch (err) {
+                        json = { raw: text };
+                    }
+                }
+                if (!res.ok) {
+                    const message = json && json.message ? json.message : res.statusText;
+                    throw new Error(message);
+                }
+                return json ?? {};
+            } catch (err) {
+                this.log(`错误：${err.message}`);
+                alert(err.message);
+                return null;
+            }
+        },
+        logMqtt(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            this.mqttLogs.push(`[${timestamp}] ${message}`);
+            if (this.mqttLogs.length > 30) {
+                this.mqttLogs.shift();
+            }
+        },
+        log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            this.logs.push(`[${timestamp}] ${message}`);
+            if (this.logs.length > 200) {
+                this.logs.shift();
+            }
+        },
+        formatTime(value) {
+            if (!value) {
+                return '未知时间';
+            }
+            return new Date(value).toLocaleString();
+        },
+        formatNumber(value) {
+            if (value === null || value === undefined) {
+                return '0.00';
+            }
+            return Number(value).toFixed(2);
+        },
+        displayDeviceStatus(status) {
+            const labels = {
+                AVAILABLE: '可用',
+                IN_USE: '占用',
+                MAINTENANCE: '维护',
+                OFFLINE: '离线'
+            };
+            if (!status) {
+                return '未知';
+            }
+            return labels[status] || status;
+        },
+        displayLockStatus(lockStatus, deviceStatus) {
+            if (deviceStatus === 'OFFLINE') {
+                return '———';
+            }
+            if (!lockStatus) {
+                return '———';
+            }
+            const labels = {
+                LOCKED: '锁已关',
+                UNLOCKED: '锁已开'
+            };
+            return labels[lockStatus] || lockStatus;
+        },
+        displayRentalStatus(status) {
+            const map = {
+                ACTIVE: '进行中',
+                COMPLETED: '已完成',
+                OVERDUE: '已逾期',
+                CANCELED: '已取消'
+            };
+            return map[status] || status || '未知';
+        },
+        shortId(value) {
+            if (!value) {
+                return '-';
+            }
+            return String(value).slice(0, 8);
+        },
+        rentalShortId(id) {
+            return this.shortId(id);
+        },
+        rentalDuration(rental) {
+            if (!rental || !rental.startedAt) {
+                return '未开始';
+            }
+            const start = new Date(rental.startedAt);
+            if (Number.isNaN(start.getTime())) {
+                return '未开始';
+            }
+            const end = rental.endedAt ? new Date(rental.endedAt) : this.now;
+            if (Number.isNaN(end.getTime())) {
+                return '未开始';
+            }
+            const diffMs = Math.max(0, end.getTime() - start.getTime());
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            const hh = String(hours).padStart(2, '0');
+            const mm = String(minutes).padStart(2, '0');
+            const ss = String(seconds).padStart(2, '0');
+            if (days > 0) {
+                return `${days}天 ${hh}:${mm}:${ss}`;
+            }
+            return `${hh}:${mm}:${ss}`;
+        },
+        canUnlockRental(rental) {
+            if (!rental) {
+                return false;
+            }
+            return rental.status === 'ACTIVE' || rental.status === 'OVERDUE';
+        },
+        canCancelRental(rental) {
+            if (!rental || rental.status !== 'ACTIVE') {
+                return false;
+            }
+            if (!rental.startedAt) {
+                return true;
+            }
+            const startedAt = new Date(rental.startedAt);
+            if (Number.isNaN(startedAt.getTime())) {
+                return true;
+            }
+            const nowReference = this.now;
+            if (!nowReference || Number.isNaN(nowReference.getTime())) {
+                return true;
+            }
+            const elapsedMs = Math.max(0, nowReference.getTime() - startedAt.getTime());
+            const fiveMinutesMs = 5 * 60 * 1000;
+            return elapsedMs <= fiveMinutesMs;
+        }
+    },
+    mounted() {
+        this.handleResize();
+        window.addEventListener('resize', this.handleResize);
+        this.captureLockedDeviceFromUrl();
+        const restored = this.loadSessionFromStorage();
+        this.startRealtimeUpdates();
+        if (restored) {
+            this.refreshDashboards();
+        }
+    },
+    beforeUnmount() {
+        this.stopRealtimeUpdates();
+        window.removeEventListener('resize', this.handleResize);
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
