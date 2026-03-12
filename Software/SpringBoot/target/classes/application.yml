@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: carebed-platform
+  datasource:
+    url: jdbc:mysql://localhost:3306/carebed?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
+    username: carebed
+    password: carebed
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+server:
+  port: 8081
+carebed:
+  mqtt:
+    enabled: true
+    broker:
+      host: 0.0.0.0
+      port: 1883
+      persistence-path: mqtt-data
+    bridge:
+      host: 127.0.0.1
+      port: 1883
+      qos: 1
+    heartbeat-timeout-ms: 90000
+    offline-check-interval-ms: 30000

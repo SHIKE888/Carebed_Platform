@@ -594,11 +594,11 @@
                 <form @submit.prevent="handleLogin" class="stack">
                     <label>
                         用户名
-                        <input type="text" v-model="loginForm.username" placeholder="admin" required>
+                        <input type="text" v-model="loginForm.username" placeholder="请输入用户名" required>
                     </label>
                     <label>
                         密码
-                        <input type="password" v-model="loginForm.password" placeholder="Admin@123" required>
+                        <input type="password" v-model="loginForm.password" placeholder="请输入密码" required>
                     </label>
                     <button type="submit">登录</button>
                 </form>
@@ -614,11 +614,11 @@
                 <form @submit.prevent="handleRegister" class="stack">
                     <label>
                         用户名
-                        <input type="text" v-model="registerForm.username" placeholder="family" required>
+                        <input type="text" v-model="registerForm.username" placeholder="请输入用户名" required>
                     </label>
                     <label>
                         密码
-                        <input type="password" v-model="registerForm.password" placeholder="Family@123" required>
+                        <input type="password" v-model="registerForm.password" placeholder="请输入密码" required>
                     </label>
                     <label>
                         角色
@@ -627,13 +627,23 @@
                             <option value="ADMIN">运营管理员</option>
                         </select>
                     </label>
+                    <template v-if="registerForm.role === 'ADMIN'">
+                        <label>
+                            默认管理员账号
+                            <input type="text" v-model="registerForm.adminUsername" placeholder="请输入默认管理员账号" required>
+                        </label>
+                        <label>
+                            默认管理员密码
+                            <input type="password" v-model="registerForm.adminPassword" placeholder="请输入默认管理员密码" required>
+                        </label>
+                    </template>
                     <label>
                         姓名
-                        <input type="text" v-model="registerForm.fullName" placeholder="默认管理员" required>
+                        <input type="text" v-model="registerForm.fullName" placeholder="请输入姓名" required>
                     </label>
                     <label>
                         手机号
-                        <input type="tel" v-model="registerForm.phone" placeholder="+8613500000000" required>
+                        <input type="tel" v-model="registerForm.phone" placeholder="请输入手机号" required>
                     </label>
                     <button type="submit">注册并登录</button>
                 </form>
@@ -1273,16 +1283,18 @@
 const apiBase = 'https://msas.absozero.cn';
 
 const defaultLoginForm = () => ({
-    username: 'admin',
-    password: 'Admin@123'
+    username: '',
+    password: ''
 });
 
 const defaultRegisterForm = () => ({
-    username: 'family',
-    password: 'Family@123',
+    username: '',
+    password: '',
     role: 'FAMILY',
-    fullName: '默认家属',
-    phone: '+8613500000000'
+    fullName: '',
+    phone: '',
+    adminUsername: '',
+    adminPassword: ''
 });
 
 const defaultCustomerState = () => ({
@@ -1356,6 +1368,7 @@ createApp({
             lockedDeviceCode: '',
             mobileTab: 'devices',
             isMobile: false,
+            sessionExpiredHandling: false,
             pageSize: 6,
             pagination: {
                 devices: 1,
@@ -1596,7 +1609,53 @@ createApp({
                 this.applyAuthResult(result, 'login');
             }
         },
+        async validateAdminCredentials(username, password) {
+            try {
+                this.log(`请求：POST ${apiBase}/api/auth/login`);
+                const res = await fetch(`${apiBase}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                const text = await res.text();
+                let json = null;
+                if (text) {
+                    try {
+                        json = JSON.parse(text);
+                    } catch (err) {
+                        json = { raw: text };
+                    }
+                }
+                if (!res.ok) {
+                    const message = json && json.message
+                        ? json.message
+                        : (json && json.raw ? json.raw : res.statusText);
+                    this.log(`错误：${message}`);
+                    alert('默认管理员账号或密码不正确');
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                this.log(`错误：${err.message}`);
+                alert('默认管理员账号校验失败，请稍后重试');
+                return false;
+            }
+        },
         async handleRegister() {
+            if (this.registerForm.role === 'ADMIN') {
+                const adminUsername = (this.registerForm.adminUsername || '').trim();
+                const adminPassword = this.registerForm.adminPassword || '';
+                if (!adminUsername || !adminPassword) {
+                    alert('注册运营管理员账号时，请先输入默认管理员账号密码');
+                    return;
+                }
+                const valid = await this.validateAdminCredentials(adminUsername, adminPassword);
+                if (!valid) {
+                    return;
+                }
+            }
             const payload = {
                 username: this.registerForm.username,
                 password: this.registerForm.password,
@@ -1622,6 +1681,7 @@ createApp({
             this.afterLogin();
         },
         afterLogin(fromRestore = false) {
+            this.sessionExpiredHandling = false;
             this.authCard = 'login';
             this.loginForm = defaultLoginForm();
             this.registerForm = defaultRegisterForm();
@@ -1647,7 +1707,7 @@ createApp({
                 this.log('会话已激活');
             }
         },
-        logout() {
+        resetToLoginState(logMessage) {
             this.session = { token: null, role: null, displayName: null };
             this.clearSession();
             this.activeArea = 'customer';
@@ -1664,7 +1724,21 @@ createApp({
             this.expandedRentals = [];
             this.mobileTab = 'devices';
             this.logs = [];
-            this.log('已退出登录');
+            if (logMessage) {
+                this.log(logMessage);
+            }
+        },
+        handleSessionExpired(message) {
+            if (this.sessionExpiredHandling) {
+                return;
+            }
+            this.sessionExpiredHandling = true;
+            this.resetToLoginState('登录已过期，已返回登录页');
+            alert(message || '登录已过期，请重新登录');
+        },
+        logout() {
+            this.sessionExpiredHandling = false;
+            this.resetToLoginState('已退出登录');
         },
         switchArea(area) {
             if (area === 'customer' && !this.canSeeCustomer) {
@@ -2255,8 +2329,18 @@ createApp({
                     }
                 }
                 if (!res.ok) {
-                    const message = json && json.message ? json.message : res.statusText;
-                    throw new Error(message);
+                    const message = json && json.message
+                        ? json.message
+                        : (json && json.raw ? json.raw : res.statusText);
+                    const isSessionExpired = res.status === 401
+                        || /登录已过期|会话已过期|token.*expired|unauthorized/i.test(message || '');
+                    this.log(`错误：${message}`);
+                    if (isSessionExpired) {
+                        this.handleSessionExpired(message);
+                    } else {
+                        alert(message);
+                    }
+                    return null;
                 }
                 return json ?? {};
             } catch (err) {
@@ -2305,10 +2389,10 @@ createApp({
         },
         displayLockStatus(lockStatus, deviceStatus) {
             if (deviceStatus === 'OFFLINE') {
-                return '———';
+                return '--';
             }
             if (!lockStatus) {
-                return '———';
+                return '--';
             }
             const labels = {
                 LOCKED: '锁已关',
