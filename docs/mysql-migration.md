@@ -16,7 +16,7 @@ FLUSH PRIVILEGES;
 > 建议根据生产安全要求修改默认密码，并限制允许访问的主机范围。
 
 ## 3. Spring Boot 配置
-- 默认配置位于 [src/main/resources/application.yml](../src/main/resources/application.yml)：
+- 默认配置位于 [Software/SpringBoot/src/main/resources/application.yml](../Software/SpringBoot/src/main/resources/application.yml)：
   ```yaml
   spring:
     datasource:

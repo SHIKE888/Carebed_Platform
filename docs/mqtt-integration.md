@@ -1,19 +1,19 @@
 # MQTT Broker Integration Guide
 
 ## 当前实现
-- `io.moquette:moquette-broker` 与 `org.eclipse.paho:org.eclipse.paho.client.mqttv3` 已加入 [pom.xml](../pom.xml)。
-- 新增 [src/main/java/com/carebed/config/MqttBrokerConfig.java](../src/main/java/com/carebed/config/MqttBrokerConfig.java) 启动内嵌 Broker，默认监听 `0.0.0.0:1883`，持久化存储在 `mqtt-data`。
-- 桥接逻辑由 [src/main/java/com/carebed/device/mqtt/DeviceMqttBridge.java](../src/main/java/com/carebed/device/mqtt/DeviceMqttBridge.java) 负责：
+- `io.moquette:moquette-broker` 与 `org.eclipse.paho:org.eclipse.paho.client.mqttv3` 已加入 [Software/SpringBoot/pom.xml](../Software/SpringBoot/pom.xml)。
+- 新增 [Software/SpringBoot/src/main/java/com/carebed/config/MqttBrokerConfig.java](../Software/SpringBoot/src/main/java/com/carebed/config/MqttBrokerConfig.java) 启动内嵌 Broker，默认监听 `0.0.0.0:1883`，持久化存储在 `mqtt-data`。
+- 桥接逻辑由 [Software/SpringBoot/src/main/java/com/carebed/device/mqtt/DeviceMqttBridge.java](../Software/SpringBoot/src/main/java/com/carebed/device/mqtt/DeviceMqttBridge.java) 负责：
   - 订阅 `devices/+/heartbeat`，解析心跳包并更新 `DeviceService`；
   - 提供 `sendUnlockCommand`，通过 `devices/{deviceCode}/command` 下发行为 `{"command":"UNLOCK"}`；
   - 定时扫描心跳超时设备，自动标记离线。
 - 设备状态与事件现存储于 MySQL（`devices`、`device_events` 表），服务重启后仍可追踪历史心跳与操作记录。
-- 设备模型扩展在线状态与锁状态：见 [Device](../src/main/java/com/carebed/device/Device.java) 与 [DeviceResponse](../src/main/java/com/carebed/device/dto/DeviceResponse.java)。
+- 设备模型扩展在线状态与锁状态：见 [Device](../Software/SpringBoot/src/main/java/com/carebed/device/Device.java) 与 [DeviceResponse](../Software/SpringBoot/src/main/java/com/carebed/device/dto/DeviceResponse.java)。
 - 新增 REST 接口 `POST /api/devices/{id}/unlock`，通过 MQTT 执行开锁；心跳接口 `POST /api/devices/{id}/heartbeat` 现要求 `lockStatus`。
-- 应用启用调度任务处理超时：见 [CarebedApplication](../src/main/java/com/carebed/CarebedApplication.java)。
+- 应用启用调度任务处理超时：见 [CarebedApplication](../Software/SpringBoot/src/main/java/com/carebed/CarebedApplication.java)。
 
 ## 配置项
-默认配置位于 [application.yml](../src/main/resources/application.yml)：
+默认配置位于 [Software/SpringBoot/src/main/resources/application.yml](../Software/SpringBoot/src/main/resources/application.yml)：
 
 ```yaml
 carebed:
@@ -49,7 +49,7 @@ carebed:
   - ESP32 收到后应执行开锁并在下一次心跳中回传最新锁状态。
 
 ## ESP32 参考实现
-- 单文件示例位于 [docs/esp32-mqtt-reference.ino](esp32-mqtt-reference.ino)：
+- 单文件示例位于 [Frimware/esp32-mqtt-reference.ino](../Frimware/esp32-mqtt-reference.ino)：
   - 使用 `PubSubClient` 连接内嵌 Broker，并订阅命令主题；
   - 每 30 秒发布心跳，包含电量与锁状态；
   - 收到 `UNLOCK` 指令后执行本地开锁逻辑并在下次心跳中回传状态。

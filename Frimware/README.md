@@ -32,6 +32,22 @@
 - `SET WIFI <ssid> <password>`：更新 WiFi 凭证并保存。
 - `SET ID <deviceCode>`：更新设备编号并保存，MQTT 主题随之刷新。
 
+## 串口设置 WiFi 与设备 ID（推荐流程）
+
+1. 使用 Arduino IDE 或串口工具打开设备串口，波特率设为 `115200`，换行设为 `Newline`（发送命令时需要结尾换行）。
+2. 输入 `SHOW`，确认当前配置是否正确。
+3. 设置 WiFi，命令格式 `SET WIFI <ssid> <password>`，示例：`SET WIFI OfficeWiFi P@ssw0rd123`。
+4. 观察串口输出，出现 `WiFi credentials updated` 与 `Config saved to EEPROM` 表示 WiFi 配置保存成功。
+5. 设置设备 ID，命令格式 `SET ID <deviceCode>`，示例：`SET ID BED-0001`。
+6. 观察串口输出，出现 `Device ID updated` 与 `Config saved to EEPROM` 表示设备 ID 保存成功。
+7. 再次输入 `SHOW` 复核配置，确认 `SSID` 与 `DEVICE` 已更新。
+8. 若已连接 MQTT，修改设备 ID 后会自动触发重连并刷新主题，无需重新烧录。
+
+说明：
+
+- `SET WIFI` 通过空格分割参数，SSID 或密码中不建议包含空格。
+- 所有配置写入 EEPROM，断电重启后仍会保留。
+
 ## 编译与烧录
 
 - 开发板：ESP32 DevKit 系列。

@@ -127,7 +127,7 @@ sequenceDiagram
 
 ## 推荐阅读
 
-- 部署与运维：[Docs/server-deployment.md](Docs/server-deployment.md)
-- MQTT 联调：[Docs/mqtt-integration.md](Docs/mqtt-integration.md)
-- MySQL 迁移说明：[Docs/mysql-migration.md](Docs/mysql-migration.md)
-- MQTTX 测试示例：[Docs/mqttx-testing.md](Docs/mqttx-testing.md)
+- 部署与运维：[docs/server-deployment.md](docs/server-deployment.md)
+- MQTT 联调：[docs/mqtt-integration.md](docs/mqtt-integration.md)
+- MySQL 迁移说明：[docs/mysql-migration.md](docs/mysql-migration.md)
+- MQTTX 测试示例：[docs/mqttx-testing.md](docs/mqttx-testing.md)
