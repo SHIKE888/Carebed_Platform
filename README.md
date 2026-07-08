@@ -1,7 +1,7 @@
 # CareBed Platform — 物联网共享陪护床系统
 
 > **面向医院场景的共享陪护床软硬件一体化解决方案**  
-> 项目状态：v0.1 | 技术栈：Spring Boot 3 + Vue 3 + ESP32 + MQTT + MySQL
+> 项目状态：v0.1 | 技术栈：Spring Boot 3 + Vue 3 + ESP32 + BLE Mesh + MQTT + MySQL
 
 ---
 
@@ -44,15 +44,28 @@ graph TB
         DB[(MySQL)]
     end
 
-    subgraph "设备层"
-        ESP[ESP32 终端<br/>× N]
+    subgraph "通信层"
+        MQ[MQTT Broker<br/>Moquette :1883]
+    end
+
+    subgraph "设备层 — BLE Mesh"
+        GW[网关设备<br/>WiFi + BLE]
+        ND1[终端设备 1<br/>纯 BLE]
+        ND2[终端设备 2<br/>纯 BLE]
+        ND3[终端设备 N<br/>纯 BLE]
     end
 
     U -->|HTTPS| F
     F -->|"REST JSON"| B
     B -->|JPA| DB
-    B -->|"MQTT devices/+/command"| ESP
-    ESP -->|"MQTT devices/+/heartbeat"| B
+    B -->|"MQTT devices/+/command QoS2"| MQ
+    MQ -->|"MQTT devices/+/heartbeat"| B
+
+    GW -->|WiFi + MQTT| MQ
+    GW -.->|"BLE Mesh"| ND1
+    GW -.->|"BLE Mesh"| ND2
+    ND1 -.->|"BLE Mesh"| ND3
+    ND2 -.->|"BLE Mesh"| ND3
 ```
 
 *图2 系统总体框图*
@@ -61,9 +74,12 @@ graph TB
 
 系统采用四层架构设计：
 
-1. **设备层（感知与控制）**：以 ESP32 微控制器为核心，集成电磁锁驱动、OLED 显示、电量检测等功能。每个设备通过 WiFi 接入网络，与云端建立 MQTT 长连接，实现心跳上报与远程指令响应。
-2. **通信层（消息路由）**：基于 MQTT 协议，采用嵌入式 Moquette Broker（端口 1883）实现消息的发布/订阅模式。上行主题 `devices/{code}/heartbeat` 承载设备状态，下行主题 `devices/{code}/command` 投递控制指令。
+1. **设备层（BLE Mesh 网络）**：每张陪护床内置 ESP32 微控制器，集成了 BLE 主从一体通信、电磁锁控制和 OLED 显示。所有设备通过 BLE 构建 mesh 网络——每个设备既是广播者也是接收者，能自主发现邻居设备并建立双向连接。其中至少一台设备具备 WiFi 连接能力（网关节点），负责 mesh 网络与云端的桥接。
+
+2. **通信层（消息路由）**：采用双层通信机制。Mesh 内部基于 BLE GATT 协议——设备间通过自定义 Service/Characteristic 交换 JSON 消息，每条消息携带唯一 msgId 和 TTL，通过 LRU 去重确保无环转发。设备与云端之间通过 MQTT 协议——网关节点订阅 mesh 中所有设备的命令主题，代理非网关设备上下行消息。
+
 3. **应用服务层（业务逻辑）**：Spring Boot 3 后端封装完整业务能力，包含认证鉴权、设备管理、租借计费、钱包交易、报修维修、通知推送、管理看板等七大模块，通过 JPA 实现 MySQL 持久化，通过 Paho MQTT 桥接完成与设备的双向通信。
+
 4. **用户层（交互界面）**：Vue 3 SPA 提供家属端与管理端双门户，通过 REST API 与后端交互，覆盖租借操作、设备监控、数据分析等场景。
 
 ### 2.3 各模块关系
@@ -97,49 +113,82 @@ flowchart LR
 
 *图3 模块关系图*
 
+### 2.4 Mesh 通信模式
+
+```mermaid
+sequenceDiagram
+    participant GW as 网关设备
+    participant ND1 as 终端设备 1
+    participant ND2 as 终端设备 2
+    participant MQ as MQTT Broker
+    participant API as 后端服务
+
+    Note over ND1,ND2: BLE Mesh 网络内部
+    ND1->>ND2: BLE 广播 MSG_HEARTBEAT
+    ND2->>ND1: BLE 广播 MSG_MESH_SYNC
+
+    Note over GW: 网关桥接 Mesh 到 MQTT
+    ND1->>GW: BLE 广播 MSG_HEARTBEAT
+    GW->>MQ: PUB devices/ND1/heartbeat
+    MQ->>API: 转发心跳
+
+    Note over API: 下发指令
+    API->>MQ: PUB devices/ND1/command UNLOCK
+    MQ->>GW: 收到命令
+    GW->>GW: 目标 ND1 在 mesh 中
+    GW->>ND1: BLE 广播 MSG_COMMAND
+    ND1->>ND1: 执行开锁
+    ND1->>GW: BLE 广播 MSG_COMMAND_RESP
+    GW->>MQ: PUB devices/ND1/response
+```
+
+*图4 Mesh 通信序列图*
+
 ---
 
 ## 3. 硬件整体介绍
 
 ### 3.1 硬件架构总览
 
-硬件系统以 ESP32 为核心控制器，外围电路包括电磁锁驱动模块、OLED 显示模块、电源管理模块及状态检测模块。各模块之间通过 GPIO、I2C、ADC 等接口互联。
+硬件系统以 ESP32 为核心控制器，外围电路包括电磁锁驱动模块、OLED 显示模块、电源管理模块及状态检测模块。各模块之间通过 GPIO、I2C 等接口互联。
 
 ```mermaid
 graph TB
     subgraph "CareBed 硬件主板"
         MCU[ESP32<br/>主控芯片]
-        
+
         subgraph "电源模块"
             PWR[DC 电源输入<br/>5V / 12V]
             REG[稳压电路<br/>3.3V / 5V]
         end
-        
+
         subgraph "执行模块"
-            LOCK[电磁锁驱动<br/>GPIO 4 → 继电器]
+            LOCK[电磁锁驱动<br/>GPIO 4 输出]
         end
-        
+
         subgraph "检测模块"
             SENSOR[锁状态检测<br/>GPIO 48 上拉输入<br/>双向中断]
             BAT[电量检测<br/>ADC 采样]
         end
-        
+
         subgraph "人机交互"
-            OLED[OLED 显示屏<br/>I2C: SDA=8, SCL=9]
+            OLED[OLED 显示屏<br/>I2C: SDA-8, SCL-9]
         end
-        
+
         subgraph "通信模块"
+            BLE[BLE<br/>主从一体]
             WIFI[WiFi<br/>802.11 b/g/n]
-            UART[串口调试<br/>波特率 115200]
+            UART[串口调试<br/>115200 baud]
         end
 
         PWR --> REG
         REG --> MCU
-        
+
         MCU -->|GPIO 4| LOCK
         SENSOR -->|GPIO 48| MCU
         BAT -->|ADC| MCU
         MCU -->|I2C| OLED
+        MCU --> BLE
         MCU --> WIFI
         MCU --> UART
     end
@@ -147,25 +196,25 @@ graph TB
     LOCK --> E[电磁锁]
 ```
 
-*图4 硬件架构框图*
+*图5 硬件架构框图*
 
 ### 3.2 电路各模块设计
 
 #### 3.2.1 主控模块（ESP32）
 
-采用 ESP32 DevKit 系列模组，内置 Tensilica Xtensa LX6 双核处理器，主频 240 MHz，集成 520 KB SRAM 和 4 MB Flash，支持 802.11 b/g/n WiFi 和蓝牙双模通信。作为系统核心，负责 MQTT 协议栈运行、锁控逻辑执行、OLED 显示驱动及外设管理。
+采用 ESP32 DevKit 系列模组，内置 Tensilica Xtensa LX6 双核处理器，主频 240 MHz，集成 520 KB SRAM 和 4 MB Flash，支持 802.11 b/g/n WiFi 和蓝牙双模通信。作为系统核心，负责 BLE Mesh 协议栈运行、锁控逻辑执行、OLED 显示驱动及外设管理。
 
 **关键引脚说明：**
 
 | 引脚 | 功能 | 信号方向 |
 |------|------|----------|
-| GPIO 4 | 电磁锁继电器控制 | 输出 |
+| GPIO 4  | 电磁锁继电器控制 | 输出 |
 | GPIO 48 | 锁状态反馈（上拉输入，双向中断） | 输入 |
-| GPIO 8 (SDA) | OLED I²C 数据线 | 双向 |
-| GPIO 9 (SCL) | OLED I²C 时钟线 | 输出 |
+| GPIO 8 (SDA) | OLED I2C 数据线 | 双向 |
+| GPIO 9 (SCL) | OLED I2C 时钟线 | 输出 |
 
-> **\[此处插入 SCH 原理图 — 主控模块部分\]**  
-> *图5 主控模块原理图（标注 ESP32 最小系统电路及关键 I/O 信号线）*
+> **\[此处插入 SCH 原理图 -- 主控模块部分\]**  
+> *图6 主控模块原理图（标注 ESP32 最小系统电路及关键 I/O 信号线）*
 
 #### 3.2.2 电磁锁驱动模块
 
@@ -180,40 +229,40 @@ graph TB
 | LOCK_CTRL | ESP32 GPIO 4 | 继电器 IN | 高电平脉冲驱动开锁 |
 | LOCK_STATE | 锁反馈 | ESP32 GPIO 48 | 读取锁实际状态（上拉输入，双向中断） |
 
-> **\[此处插入 SCH 原理图 — 继电器驱动电路\]**  
-> *图6 电磁锁驱动模块原理图（标注 LOCK_CTRL 控制信号与 LOCK_STATE 反馈信号）*
+> **\[此处插入 SCH 原理图 -- 继电器驱动电路\]**  
+> *图7 电磁锁驱动模块原理图（标注 LOCK_CTRL 控制信号与 LOCK_STATE 反馈信号）*
 
 #### 3.2.3 OLED 显示模块
 
-采用 0.96 寸 SSD1306 OLED 显示屏（128×64 像素），通过 I²C 总线与 ESP32 通信。固件中集成 U8g2 图形库，实时显示设备编号、WiFi 连接状态、MQTT 连接状态、当前时间及开锁确认信息。
+采用 0.96 寸 SSD1306 OLED 显示屏（128x64 像素），通过 I2C 总线与 ESP32 通信。固件中集成 U8g2 图形库，实时显示设备编号、BLE Mesh 连接状态、WiFi 连接状态、当前时间及开锁确认信息。
 
 | 信号 | 来源 | 目标 | 说明 |
 |------|------|------|------|
-| SDA | ESP32 GPIO 8 | OLED SDA | I²C 数据 |
-| SCL | ESP32 GPIO 9 | OLED SCL | I²C 时钟 |
+| SDA | ESP32 GPIO 8 | OLED SDA | I2C 数据 |
+| SCL | ESP32 GPIO 9 | OLED SCL | I2C 时钟 |
 
-> **\[此处插入 SCH 原理图 — OLED 显示模块\]**  
-> *图7 OLED 显示模块原理图（标注 I²C 总线连接）*
+> **\[此处插入 SCH 原理图 -- OLED 显示模块\]**  
+> *图8 OLED 显示模块原理图（标注 I2C 总线连接）*
 
 #### 3.2.4 电源模块
 
 系统支持外部 DC 5V/12V 供电，通过稳压电路转换为 3.3V 为 ESP32 及外设供电，5V 为继电器线圈供电。
 
-> **\[此处插入 SCH 原理图 — 电源模块\]**  
-> *图8 电源模块原理图（标注电压转换路径）*
+> **\[此处插入 SCH 原理图 -- 电源模块\]**  
+> *图9 电源模块原理图（标注电压转换路径）*
 
 #### 3.2.5 PCB 版图
 
-> **\[此处插入 PCB 版图 — 正面\]**  
-> *图9 PCB 正面布局图（标注各模块位置）*
+> **\[此处插入 PCB 版图 -- 正面\]**  
+> *图10 PCB 正面布局图（标注各模块位置）*
 
-> **\[此处插入 PCB 版图 — 背面\]**  
-> *图10 PCB 背面布局图*
+> **\[此处插入 PCB 版图 -- 背面\]**  
+> *图11 PCB 背面布局图*
 
 #### 3.2.6 硬件物料清单（BOM）
 
 > **\[此处插入 BOM 表截图\]**  
-> *图11 核心物料清单（参见 Hardware/工程文件/BOM_Board1_Schematic1.csv）*
+> *图12 核心物料清单（参见 Hardware/工程文件/BOM_Board1_Schematic1.csv）*
 
 ---
 
@@ -229,9 +278,9 @@ graph TB
 | MQTT Broker | Moquette (嵌入式) | 0.17 |
 | MQTT 客户端 | Eclipse Paho | 1.2.5 |
 | 前端框架 | Vue 3 (CDN + Pico CSS) | 3.x |
-| 设备固件 | Arduino framework + PubSubClient | ESP32 |
-| 构建工具 | Maven | — |
-| 安全认证 | 自定义 Token (UUID) + BCrypt | — |
+| 设备固件 | Arduino framework + BLEDevice + PubSubClient | ESP32 |
+| 构建工具 | Maven | -- |
+| 安全认证 | 自定义 Token (UUID) + BCrypt | -- |
 
 ### 4.2 后端模块架构
 
@@ -245,13 +294,13 @@ graph TB
 
 #### 4.2.2 设备管理模块（Device）
 
-- **设备生命周期**：注册 → 可用（AVAILABLE）→ 使用中（IN_USE）→ 维护（MAINTENANCE）→ 离线（OFFLINE）。
+- **设备生命周期**：注册到可用（AVAILABLE）到使用中（IN_USE）到维护（MAINTENANCE）到离线（OFFLINE）。
 - **在线状态机**：由心跳驱动，`onlineStatus` 在 ONLINE/OFFLINE 之间切换；90 秒无心跳自动标记离线。
-- **MQTT 桥接**（DeviceMqttBridge）：实现 `DeviceCommandGateway` 接口，支持远程开锁（UNLOCK）和重启（REBOOT）指令下发。
+- **MQTT 桥接**（`DeviceMqttBridge`）：实现 `DeviceCommandGateway` 接口，支持远程开锁（UNLOCK）和重启（REBOOT）指令下发。
 
 #### 4.2.3 租借计费模块（Rental）
 
-- **租借流程**：开始租借 → 设备绑定患者 → 定时计费 → 归还确认关锁 → 扣费 → 释放设备。
+- **租借流程**：开始租借、设备绑定患者、定时计费、归还确认关锁、扣费、释放设备。
 - **计费规则**：10 元/小时（`HOURLY_RATE`），按使用时长结算。
 - **超时检测**：定时任务扫描 `expectedEndAt` 已过期的订单，自动标记为 OVERDUE。
 
@@ -264,11 +313,11 @@ graph TB
 #### 4.2.5 通知模块（Notification）
 
 - **通知类型**：7 种枚举类型，覆盖租借成功、超时提醒、扣费通知、报修更新等。
-- **双渠道**：同时通知当事用户和管理员通道（ID 为 `00000000-0000-0000-0000-000000000000`）。
+- **双渠道**：同时通知当事用户和管理员通道（ID 为全零 UUID）。
 
 #### 4.2.6 报修维修模块（Repair）
 
-- **工单流程**：创建（OPEN）→ 处理中（IN_PROGRESS）→ 解决（RESOLVED）/ 驳回（REJECTED）。
+- **工单流程**：创建（OPEN）到处理中（IN_PROGRESS）到解决（RESOLVED）或驳回（REJECTED）。
 - **设备联动**：报修提交后关联设备自动进入 MAINTENANCE 状态。
 
 #### 4.2.7 管理后台模块（Admin）
@@ -276,47 +325,45 @@ graph TB
 - **概览面板**：16 项统计指标（用户数、设备数、租借数、维修数、收入、余额等）。
 - **趋势分析**：按日统计使用量和收入趋势。
 
-### 4.3 MQTT 通信协议
+### 4.3 BLE Mesh 通信协议
+
+#### 4.3.1 Mesh 消息格式
+
+每条 mesh 消息为 JSON 格式，包含以下字段：
+
+| 字段 | 含义 | 说明 |
+|------|------|------|
+| `i` | 消息 ID | `{deviceCode}-{timestamp}-{seq}`，全局唯一 |
+| `t` | 消息类型 | 整型，详见消息类型枚举 |
+| `s` | 源设备编号 | 发送者的 deviceCode |
+| `d` | 目标设备编号 | 仅 MSG_COMMAND 使用 |
+| `h` | TTL | 初始值 5，每转发一次减 1，0 时丢弃 |
+| `p` | 载荷 | 嵌套 JSON，内容因消息类型而异 |
+
+#### 4.3.2 消息类型枚举
+
+| 类型值 | 名称 | 用途 |
+|--------|------|------|
+| 1 | MSG_HEARTBEAT | 设备心跳，所有设备每 10 秒广播一次到 mesh |
+| 2 | MSG_COMMAND | 远程指令，来自 MQTT，经网关转发到 mesh |
+| 3 | MSG_COMMAND_RESP | 指令执行结果，发回网关 |
+| 5 | MSG_MESH_SYNC | 拓扑同步，每 30 秒广播一次 |
+| 6 | MSG_MESH_JOIN | 设备加入通知 |
+| 7 | MSG_MESH_LEAVE | 设备离开通知 |
+
+#### 4.3.3 防泛洪转发机制
+
+每条消息的 `i`（msgId）由源设备唯一生成。每个节点维护一个 128 条目的 LRU 缓存，检测到重复 msgId 时直接丢弃，从根源上杜绝了消息环路导致的广播风暴。TTL 字段每转发一次减 1，到达 0 后不再转发，进一步限制了消息的传播范围。
+
+### 4.4 MQTT 通信协议
 
 | 方向 | 主题 | QoS | 载荷格式 | 说明 |
 |------|------|-----|----------|------|
-| 上行 | `devices/{code}/heartbeat` | 1 | `{"battery":85,"lockStatus":"LOCKED"}` | 设备心跳（含电量和锁状态） |
+| 上行 | `devices/{code}/heartbeat` | 1 | `{"battery":85,"lockStatus":"LOCKED"}` | 设备心跳 |
 | 下行 | `devices/{code}/command` | 2 | `{"command":"UNLOCK","issuedAt":"...","commandId":"..."}` | 远程控制指令 |
+| 上行 | `devices/{code}/response` | 0 | `{"command":"UNLOCK","result":"SUCCESS"}` | 指令执行结果 |
 
-**通信流程示意：**
-
-```mermaid
-sequenceDiagram
-    participant ESP as ESP32 设备
-    participant MQ as MQTT Broker
-    participant Bridge as DeviceMqttBridge
-    participant DB as MySQL
-    participant API as REST API
-
-    Note over ESP: 上电初始化
-    ESP->>ESP: 加载 EEPROM 配置
-    ESP->>ESP: 连接 WiFi
-    ESP->>MQ: MQTT CONNECT
-    MQ->>ESP: CONNACK
-    ESP->>MQ: SUB "devices/{code}/command"
-
-    loop 每 10 秒
-        ESP->>MQ: PUB "devices/{code}/heartbeat"
-        MQ->>Bridge: 转发心跳
-        Bridge->>DB: 更新设备状态
-    end
-
-    API->>Bridge: POST /api/devices/{id}/unlock
-    Bridge->>MQ: PUB "devices/{code}/command {UNLOCK}"
-    MQ->>ESP: 投递指令
-    ESP->>ESP: 继电器脉冲开锁
-    ESP->>MQ: PUB heartbeat (lockStatus=UNLOCKED)
-    Bridge->>DB: 更新锁状态
-```
-
-*图12 MQTT 通信序列图*
-
-### 4.4 数据库设计
+### 4.5 数据库设计
 
 系统共包含以下数据表：
 
@@ -335,7 +382,7 @@ sequenceDiagram
 | `mqtt_logs` | MQTT 通信日志 | id, direction, topic, payload, deviceCode |
 | `activity_logs` | 操作审计日志 | id, actorId, actorName, action, details |
 
-### 4.5 REST API 端点汇总
+### 4.6 REST API 端点汇总
 
 | 端点 | 方法 | 模块 |
 |------|------|------|
@@ -360,30 +407,31 @@ sequenceDiagram
 
 | 指标项 | 设计值 | 说明 |
 |--------|--------|------|
-| 心跳上报间隔 | 10 s | ESP32 定时发布心跳至 Broker |
-| 心跳超时阈值 | 90 s | 超时后设备自动标记 OFFLINE |
-| 离线检测周期 | 30 s | 定时任务扫描超时设备 |
-| 开锁响应延迟 | ≤ 2 s | 从指令下达到锁状态更新 |
-| 开锁失败重试 | ≤ 3 次 | 重试间隔 300 ms |
+| BLE Mesh 心跳间隔 | 10 s | 所有设备通过 BLE 广播心跳到 mesh |
+| BLE 扫描周期 | 4 s 扫描 / 20 s 冷却 | 避免持续扫描耗电 |
+| Mesh 消息 TTL | 5 跳 | 超过 5 跳的消息自动丢弃 |
+| 消息去重缓存 | 128 条 LRU | 防泛洪环路 |
+| Peer 超时阈值 | 120 s | 超时后移除 peer 列表 |
+| 心跳超时阈值 | 90 s | 后端检测设备离线 |
+| 开锁响应延迟 | 小于等于 2 s | 从指令下达到锁状态更新 |
+| 并发连接数 | 小于等于 6 个 BLE peer | ESP32 BLE 硬件限制 |
 | 会话有效期 | 12 h | Token 自动过期 |
 | 租借计费精度 | 分（0.01 元） | BigDecimal 精确运算 |
-| 数据库连接池 | HikariCP (默认) | Spring Boot 默认配置 |
-| MQTT Qo S | 上行 QoS 1 / 下行 QoS 2 | 平衡可靠性与效率 |
 
 ---
 
 ## 6. 设计流程
 
-本系统采用迭代式开发流程，分为四个阶段：**需求分析**阶段完成业务流程梳理与用例建模，产出需求文档与流程图；**系统设计**阶段确定四层架构（设备层、通信层、服务层、用户层），完成数据库 ER 设计与 MQTT 主题协议定义；**实现开发**阶段并行推进硬件固件与软件平台开发，通过模拟器与 Mock MQTT 客户端进行单元测试与集成联调；**部署验证**阶段将后端部署至生产服务器，使用 MQTTX 等工具验证上下行通信链路，完成端到端业务流程验收。
+本系统采用迭代式开发流程，分为四个阶段：**需求分析**阶段完成业务流程梳理与用例建模，产出需求文档与流程图；**系统设计**阶段确定四层架构（设备层-BLE Mesh、通信层-MQTT）、数据库 ER 设计与 BLE Mesh 协议定义；**实现开发**阶段并行推进硬件固件与软件平台开发，使用 BLE 调试工具与模拟设备进行单元测试与集成联调；**部署验证**阶段将后端部署至生产服务器，使用 MQTTX、nRF Connect 等工具验证 BLE Mesh 链路与 MQTT 桥接，完成端到端业务流程验收。
 
-> **\[此处插入需求分析流程图 & 业务用例图\]**  
+> **\[此处插入需求分析流程图 and 业务用例图\]**  
 > *图13 需求分析阶段产出物（参见 docs/Order/ 目录）*
 
 ---
 
 ## 7. 总结与展望
 
-本文详细阐述了物联网共享陪护床系统的全栈设计方案。系统以 ESP32 为硬件终端，Spring Boot 3 为云服务基座，MQTT 为通信桥梁，实现了陪护床从设备注册、在线租借、自动计费到归还维修的完整闭环。系统具备**低延迟指令响应**（开锁 ≤ 2s）、**高可靠心跳检测**（QoS 1+QoS 2 混合保障）和**完备的支付争议处理**能力。
+本文详细阐述了物联网共享陪护床系统的全栈设计方案。系统以 ESP32 为硬件终端，通过 BLE Mesh 实现设备间自组织网络，配合 MQTT 桥接与云端的 Spring Boot 3 后端，实现了陪护床从设备注册、在线租借、自动计费到归还维修的完整闭环。系统具备**去中心化的 BLE Mesh 组网**（无需全部设备联网）、**低延迟指令响应**（开锁不超过 2s）、**防泛洪消息转发**（msgId + TTL + LRU 三重保护）和**完备的支付争议处理**能力。
 
 **未来规划：**
 
@@ -392,9 +440,10 @@ sequenceDiagram
 - **消息多渠道**：集成微信公众号、短信等通知渠道；
 - **数据分析大屏**：实时展示设备热力图、使用趋势、收入看板；
 - **固件 OTA**：支持设备固件远程升级；
-- **边缘计算**：探索在 ESP32 端侧运行轻量规则引擎，降低云端依赖。
+- **边缘计算**：在 ESP32 端侧运行轻量规则引擎，降低云端依赖；
+- **Mesh 路由优化**：引入动态路由选择，减少非必要转发。
 
 ---
 
-*文档版本：v1.0 | 最后更新：2026-07-07*  
+*文档版本：v2.0（BLE Mesh） | 最后更新：2026-07-08*  
 *项目仓库：[Software/SpringBoot/](Software/SpringBoot/) | [Software/Vue/](Software/Vue/) | [Frimware/](Frimware/) | [Hardware/](Hardware/) | [docs/](docs/)*

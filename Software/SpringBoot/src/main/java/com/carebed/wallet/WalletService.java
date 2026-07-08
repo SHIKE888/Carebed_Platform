@@ -110,17 +110,19 @@ public class WalletService {
     public DisputeResponse createDispute(UUID userId, DisputeRequest request) {
         Instant now = Instant.now();
         double orderAmount = 0.0;
+        String orderId = request.orderId();
         try {
-            var rental = rentalRecordRepository.findById(java.util.UUID.fromString(request.orderId()));
-            if (rental.isPresent()) {
-                orderAmount = rental.get().getAmount();
+            java.util.UUID uuid = java.util.UUID.fromString(orderId);
+            var rentalOpt = rentalRecordRepository.findById(uuid);
+            if (rentalOpt.isPresent()) {
+                orderAmount = rentalOpt.get().getAmount();
             }
         } catch (Exception ignored) {
         }
         WalletDisputeEntity entity = new WalletDisputeEntity();
         entity.setId(UUID.randomUUID());
         entity.setUserId(userId);
-        entity.setOrderId(request.orderId());
+        entity.setOrderId(orderId);
         entity.setReason(request.reason());
         entity.setOrderAmount(orderAmount);
         entity.setRefunded(false);
@@ -230,7 +232,6 @@ public class WalletService {
                 .toList();
     }
 
-    @Transactional
     @Transactional
     public void disputeRefund(UUID disputeId, BigDecimal refundAmount) {
         WalletDisputeEntity dispute = walletDisputeRepository.findById(disputeId)

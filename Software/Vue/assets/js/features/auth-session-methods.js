@@ -357,14 +357,16 @@ export const interactionMethods = {
             return map[status] || status || '-';
         },
         displayLockStatus(lockStatus, deviceStatus) {
-            if (deviceStatus !== 'AVAILABLE') {
+            if (!lockStatus || deviceStatus === 'OFFLINE') {
                 return '不可用';
             }
-            const map = {
-                'LOCKED': '已锁定',
-                'UNLOCKED': '已解锁'
-            };
-            return map[lockStatus] || '未锁定';
+            if (lockStatus === 'LOCKED') {
+                return '已关锁';
+            }
+            if (lockStatus === 'UNLOCKED') {
+                return '已开锁';
+            }
+            return '不可用';
         },
         displayDisputeStatus(status) {
             const map = {

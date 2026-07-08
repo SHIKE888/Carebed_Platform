@@ -32,7 +32,7 @@ public class WalletDisputeEntity {
     @Column(nullable = false, length = 512)
     private String reason;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(nullable = false)
     private double orderAmount;
 
     @Column(nullable = false)

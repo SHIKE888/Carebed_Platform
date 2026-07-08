@@ -188,6 +188,17 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
+    public List<UserProfileResponse> searchUsers(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return listUsers(null);
+        }
+        return userAccountRepository.searchByKeyword(keyword).stream()
+                .map(this::toDomain)
+                .map(this::toProfile)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<UserProfileResponse> searchByPatientReference(String reference) {
         if (!StringUtils.hasText(reference)) {
             return List.of();

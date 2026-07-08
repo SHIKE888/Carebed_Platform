@@ -1032,7 +1032,7 @@
                                             </div>
                                             <div style="flex-shrink: 0; display: flex; gap: 0.3rem;">
                                                 <button v-if="dispute.status !== 'RESOLVED' && dispute.status !== 'REJECTED'" type="button" class="secondary action-mini-btn" @click="openDisputeEditModal(dispute)">处理</button>
-                                                <button v-if="!dispute.refunded && dispute.status !== 'RESOLVED' && dispute.status !== 'REJECTED'" type="button" class="secondary action-mini-btn" style="background:#28a745;color:#fff;" @click="disputeRefund(dispute.id, dispute.orderId, dispute.orderAmount)">💰 退费</button>
+                                                <button v-if="(dispute.status === 'OPEN' || dispute.status === 'IN_REVIEW') && !dispute.refunded" type="button" class="secondary action-mini-btn" style="background:#28a745;color:#fff;" @click="disputeRefund(dispute.id, dispute.orderId, dispute.orderAmount)">💰 退费</button>
                                             </div>
                                         </div>
                                     </li>

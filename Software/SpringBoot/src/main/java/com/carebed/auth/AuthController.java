@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -56,11 +57,22 @@ public class AuthController {
     @GetMapping("/users")
     public ResponseEntity<List<UserProfileResponse>> listUsers(
             @RequestHeader(name = AUTH_HEADER, required = false) String token,
-            @RequestParam(name = "role", required = false) UserRole role) {
+            @RequestParam(name = "role", required = false) UserRole role,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         if (token != null) {
             authService.authenticate(token);
         }
-        return ResponseEntity.ok(authService.listUsers(role));
+        List<UserProfileResponse> all = keyword != null && !keyword.isBlank()
+                ? authService.searchUsers(keyword)
+                : authService.listUsers(role);
+        int fromIndex = (page - 1) * size;
+        if (fromIndex >= all.size()) {
+            return ResponseEntity.ok(List.of());
+        }
+        int toIndex = Math.min(fromIndex + size, all.size());
+        return ResponseEntity.ok(all.subList(fromIndex, toIndex));
     }
 
     @GetMapping("/patient-links")
