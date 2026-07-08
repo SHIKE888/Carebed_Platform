@@ -128,9 +128,17 @@ public class RepairService {
                 ticket.updatedAt());
     }
 
+    @Transactional(readOnly = true)
     public List<RepairTicket> allTickets() {
         return repairTicketRepository.findAll().stream()
                 .map(this::toDomain)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RepairTicketResponse> listTicketsByIds(List<UUID> ids) {
+        return repairTicketRepository.findAllById(ids).stream()
+                .map(this::toResponse)
                 .toList();
     }
 

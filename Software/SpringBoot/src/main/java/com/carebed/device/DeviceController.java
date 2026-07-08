@@ -7,8 +7,10 @@ import com.carebed.device.dto.DeviceResponse;
 import com.carebed.device.dto.DeviceUpdateRequest;
 import com.carebed.device.dto.FaultReportRequest;
 import com.carebed.device.dto.HeartbeatUpdateRequest;
+import com.carebed.device.dto.UnlockAllResponse;
 import com.carebed.common.exception.BadRequestException;
 import com.carebed.device.mqtt.DeviceCommandGateway;
+import com.carebed.device.DeviceOnlineStatus;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.ObjectProvider;
@@ -101,5 +103,31 @@ public class DeviceController {
             throw new BadRequestException("MQTT 功能未启用，无法下发开锁指令");
         }
         return ResponseEntity.ok(deviceCommandGateway.sendUnlockCommand(id));
+    }
+
+    @PostMapping("/unlock-all")
+    public ResponseEntity<UnlockAllResponse> unlockAllOnline() {
+        if (deviceCommandGateway == null) {
+            throw new BadRequestException("MQTT 功能未启用，无法下发开锁指令");
+        }
+        List<DeviceResponse> allDevices = deviceService.list(DeviceStatus.AVAILABLE);
+        List<String> onlineCodes = allDevices.stream()
+                .filter(d -> d.onlineStatus() == DeviceOnlineStatus.ONLINE)
+                .map(DeviceResponse::deviceCode)
+                .toList();
+        int successCount = 0;
+        List<String> failedCodes = new java.util.ArrayList<>();
+        for (String deviceCode : onlineCodes) {
+            try {
+                var device = deviceService.findByCode(deviceCode);
+                if (device.isPresent()) {
+                    deviceCommandGateway.sendUnlockCommand(device.get().id());
+                    successCount++;
+                }
+            } catch (Exception e) {
+                failedCodes.add(deviceCode);
+            }
+        }
+        return ResponseEntity.ok(new UnlockAllResponse(onlineCodes.size(), successCount, failedCodes));
     }
 }

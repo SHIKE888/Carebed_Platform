@@ -8,11 +8,14 @@ public record WalletDispute(
         UUID userId,
         String orderId,
         String reason,
+        double orderAmount,
+        boolean refunded,
         DisputeStatus status,
         String resolution,
         Instant createdAt,
         Instant updatedAt) {
     public WalletDispute withStatus(DisputeStatus status, String resolution, Instant now) {
-        return new WalletDispute(id, userId, orderId, reason, status, resolution, createdAt, now);
+        return new WalletDispute(id, userId, orderId, reason, orderAmount, refunded, status, resolution, createdAt,
+                now);
     }
 }

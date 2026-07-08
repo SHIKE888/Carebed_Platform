@@ -4,6 +4,7 @@ import com.carebed.auth.dto.AuthResponse;
 import com.carebed.auth.dto.LoginRequest;
 import com.carebed.auth.dto.PatientLinkRequest;
 import com.carebed.auth.dto.RegisterRequest;
+import com.carebed.auth.dto.ResetPasswordRequest;
 import com.carebed.auth.dto.UserProfileResponse;
 import com.carebed.auth.persistence.UserAccountEntity;
 import com.carebed.auth.persistence.UserAccountRepository;
@@ -13,6 +14,7 @@ import com.carebed.common.exception.BadRequestException;
 import com.carebed.common.exception.BusinessException;
 import com.carebed.common.exception.ResourceNotFoundException;
 import jakarta.annotation.PostConstruct;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -133,6 +135,56 @@ public class AuthService {
 
     public void invalidateToken(String token) {
         userSessionRepository.deleteById(token);
+    }
+
+    @Transactional
+    public AuthResponse resetPassword(ResetPasswordRequest request) {
+        UserAccountEntity account = userAccountRepository
+                .findByUsernameIgnoreCaseAndPhone(request.username(), request.phone())
+                .orElseThrow(() -> new BadRequestException("用户名与手机号不匹配"));
+        account.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        account.setUpdatedAt(Instant.now());
+        userAccountRepository.save(account);
+        String token = generateSession(account);
+        return new AuthResponse(token, account.getRole(), account.getFullName());
+    }
+
+    @Transactional
+    public void deleteUser(UUID userId) {
+        UserAccountEntity entity = userAccountRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
+        userAccountRepository.delete(entity);
+    }
+
+    @Transactional
+    public void updateUser(UUID userId, String username, String fullName, String phone) {
+        UserAccountEntity entity = userAccountRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
+        if (username != null && !username.isBlank()) {
+            userAccountRepository.findByUsernameIgnoreCase(username).ifPresent(existing -> {
+                if (!existing.getId().equals(userId)) {
+                    throw new BadRequestException("用户名已存在");
+                }
+            });
+            entity.setUsername(username);
+        }
+        if (fullName != null && !fullName.isBlank()) {
+            entity.setFullName(fullName);
+        }
+        if (phone != null) {
+            entity.setPhone(phone);
+        }
+        entity.setUpdatedAt(Instant.now());
+        userAccountRepository.save(entity);
+    }
+
+    @Transactional
+    public void updatePassword(UUID userId, String newPassword) {
+        UserAccountEntity entity = userAccountRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
+        entity.setPasswordHash(passwordEncoder.encode(newPassword));
+        entity.setUpdatedAt(Instant.now());
+        userAccountRepository.save(entity);
     }
 
     @Transactional(readOnly = true)

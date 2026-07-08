@@ -9,6 +9,8 @@ public record DisputeResponse(
         String userId,
         String orderId,
         String reason,
+        double orderAmount,
+        boolean refunded,
         DisputeStatus status,
         String resolution,
         Instant createdAt,

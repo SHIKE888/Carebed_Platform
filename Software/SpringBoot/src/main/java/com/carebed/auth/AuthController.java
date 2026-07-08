@@ -4,6 +4,7 @@ import com.carebed.auth.dto.AuthResponse;
 import com.carebed.auth.dto.LoginRequest;
 import com.carebed.auth.dto.PatientLinkRequest;
 import com.carebed.auth.dto.RegisterRequest;
+import com.carebed.auth.dto.ResetPasswordRequest;
 import com.carebed.auth.dto.UserProfileResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +39,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<AuthResponse> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 
     @PostMapping("/link-patient")

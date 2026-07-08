@@ -2,6 +2,7 @@ package com.carebed.wallet;
 
 import com.carebed.common.exception.BadRequestException;
 import com.carebed.common.exception.ResourceNotFoundException;
+import com.carebed.rental.persistence.RentalRecordRepository;
 import com.carebed.wallet.dto.DisputeRequest;
 import com.carebed.wallet.dto.DisputeResponse;
 import com.carebed.wallet.dto.DisputeUpdateRequest;
@@ -29,13 +30,16 @@ public class WalletService {
     private final WalletAccountRepository walletAccountRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletDisputeRepository walletDisputeRepository;
+    private final RentalRecordRepository rentalRecordRepository;
 
     public WalletService(WalletAccountRepository walletAccountRepository,
             WalletTransactionRepository walletTransactionRepository,
-            WalletDisputeRepository walletDisputeRepository) {
+            WalletDisputeRepository walletDisputeRepository,
+            RentalRecordRepository rentalRecordRepository) {
         this.walletAccountRepository = walletAccountRepository;
         this.walletTransactionRepository = walletTransactionRepository;
         this.walletDisputeRepository = walletDisputeRepository;
+        this.rentalRecordRepository = rentalRecordRepository;
     }
 
     @Transactional(readOnly = true)
@@ -105,11 +109,21 @@ public class WalletService {
     @Transactional
     public DisputeResponse createDispute(UUID userId, DisputeRequest request) {
         Instant now = Instant.now();
+        double orderAmount = 0.0;
+        try {
+            var rental = rentalRecordRepository.findById(java.util.UUID.fromString(request.orderId()));
+            if (rental.isPresent()) {
+                orderAmount = rental.get().getAmount();
+            }
+        } catch (Exception ignored) {
+        }
         WalletDisputeEntity entity = new WalletDisputeEntity();
         entity.setId(UUID.randomUUID());
         entity.setUserId(userId);
         entity.setOrderId(request.orderId());
         entity.setReason(request.reason());
+        entity.setOrderAmount(orderAmount);
+        entity.setRefunded(false);
         entity.setStatus(DisputeStatus.OPEN);
         entity.setResolution(null);
         entity.setCreatedAt(now);
@@ -123,6 +137,13 @@ public class WalletService {
                 .map(value -> walletDisputeRepository.findByStatusOrderByCreatedAtDesc(value))
                 .orElseGet(() -> walletDisputeRepository.findAllByOrderByCreatedAtDesc());
         return source.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DisputeResponse> listUserDisputes(UUID userId) {
+        return walletDisputeRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional
@@ -153,6 +174,8 @@ public class WalletService {
                 dispute.getUserId().toString(),
                 dispute.getOrderId(),
                 dispute.getReason(),
+                dispute.getOrderAmount(),
+                dispute.isRefunded(),
                 dispute.getStatus(),
                 dispute.getResolution(),
                 dispute.getCreatedAt(),
@@ -181,6 +204,8 @@ public class WalletService {
                 entity.getUserId(),
                 entity.getOrderId(),
                 entity.getReason(),
+                entity.getOrderAmount(),
+                entity.isRefunded(),
                 entity.getStatus(),
                 entity.getResolution(),
                 entity.getCreatedAt(),
@@ -203,6 +228,42 @@ public class WalletService {
         return walletDisputeRepository.findAll().stream()
                 .map(this::toDomainDispute)
                 .toList();
+    }
+
+    @Transactional
+    @Transactional
+    public void disputeRefund(UUID disputeId, BigDecimal refundAmount) {
+        WalletDisputeEntity dispute = walletDisputeRepository.findById(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("申诉单不存在"));
+        if (dispute.getStatus() == DisputeStatus.RESOLVED || dispute.getStatus() == DisputeStatus.REJECTED) {
+            throw new BadRequestException("该争议已处理，不可再退费");
+        }
+        if (dispute.isRefunded()) {
+            throw new BadRequestException("该争议已退费，不可重复退费");
+        }
+        if (refundAmount.compareTo(BigDecimal.valueOf(dispute.getOrderAmount())) > 0) {
+            throw new BadRequestException("退费金额不能超过订单金额 " + dispute.getOrderAmount() + " 元");
+        }
+        UUID userId = dispute.getUserId();
+        refund(userId, refundAmount, dispute.getOrderId(), "争议退费");
+        dispute.setRefunded(true);
+        dispute.setStatus(DisputeStatus.RESOLVED);
+        dispute.setResolution("已退费 " + refundAmount + " 元");
+        dispute.setUpdatedAt(Instant.now());
+        walletDisputeRepository.save(dispute);
+    }
+
+    @Transactional
+    public void setBalance(UUID userId, BigDecimal newBalance) {
+        WalletAccountEntity account = ensureAccountEntity(userId);
+        Instant now = Instant.now();
+        BigDecimal delta = newBalance.subtract(account.getBalance());
+        account.setBalance(newBalance);
+        account.setUpdatedAt(now);
+        walletAccountRepository.save(account);
+        WalletTransactionEntity entity = createTransaction(
+                userId, TransactionType.ADJUSTMENT, delta, "管理员调整", null, "管理员调整余额", now);
+        walletTransactionRepository.save(entity);
     }
 
     private WalletAccountEntity ensureAccountEntity(UUID userId) {

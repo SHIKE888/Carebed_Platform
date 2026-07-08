@@ -32,6 +32,12 @@ public class WalletDisputeEntity {
     @Column(nullable = false, length = 512)
     private String reason;
 
+    @Column(nullable = false, precision = 19, scale = 2)
+    private double orderAmount;
+
+    @Column(nullable = false)
+    private boolean refunded;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private DisputeStatus status;
@@ -75,6 +81,22 @@ public class WalletDisputeEntity {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public double getOrderAmount() {
+        return orderAmount;
+    }
+
+    public void setOrderAmount(double orderAmount) {
+        this.orderAmount = orderAmount;
+    }
+
+    public boolean isRefunded() {
+        return refunded;
+    }
+
+    public void setRefunded(boolean refunded) {
+        this.refunded = refunded;
     }
 
     public DisputeStatus getStatus() {

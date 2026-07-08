@@ -11,4 +11,6 @@ public interface WalletDisputeRepository extends JpaRepository<WalletDisputeEnti
     List<WalletDisputeEntity> findByStatusOrderByCreatedAtDesc(DisputeStatus status);
 
     List<WalletDisputeEntity> findAllByOrderByCreatedAtDesc();
+
+    List<WalletDisputeEntity> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

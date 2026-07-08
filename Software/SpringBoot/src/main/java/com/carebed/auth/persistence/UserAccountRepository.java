@@ -14,4 +14,6 @@ public interface UserAccountRepository extends JpaRepository<UserAccountEntity, 
     java.util.List<UserAccountEntity> findByRole(com.carebed.auth.UserRole role);
 
     java.util.List<UserAccountEntity> findByLinkedPatientIdIgnoreCase(String linkedPatientId);
+
+    Optional<UserAccountEntity> findByUsernameIgnoreCaseAndPhone(String username, String phone);
 }

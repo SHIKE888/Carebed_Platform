@@ -1,6 +1,35 @@
 import { apiBase } from '../core/app-config.js';
 
 export const utilityMethods = {
+        showModal(message, title = '提示') {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000';
+
+            const modal = document.createElement('div');
+            modal.style.cssText = 'background:#fff;border-radius:12px;padding:24px;max-width:320px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.2);text-align:center;font-family:Arial,sans-serif';
+
+            const titleEl = document.createElement('div');
+            titleEl.textContent = title;
+            titleEl.style.cssText = 'font-size:18px;font-weight:bold;margin-bottom:16px;color:#333';
+
+            const messageEl = document.createElement('div');
+            messageEl.textContent = message;
+            messageEl.style.cssText = 'font-size:14px;color:#666;margin-bottom:24px;line-height:1.5';
+
+            const okButton = document.createElement('button');
+            okButton.textContent = '确定';
+            okButton.style.cssText = 'background:#0d6efd;color:#fff;border:none;border-radius:6px;padding:10px 32px;font-size:14px;cursor:pointer';
+            okButton.onmouseover = () => okButton.style.background = '#0b5ed7';
+            okButton.onmouseout = () => okButton.style.background = '#0d6efd';
+            okButton.onclick = () => document.body.removeChild(overlay);
+
+            modal.appendChild(titleEl);
+            modal.appendChild(messageEl);
+            modal.appendChild(okButton);
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+        },
+
         async refreshLogs() {
             if (!this.session.token) {
                 this.logs = [];
@@ -72,14 +101,14 @@ export const utilityMethods = {
                     if (isSessionExpired) {
                         this.handleSessionExpired(message);
                     } else {
-                        alert(message);
+                        this.showModal(`错误 ${res.status}：${message}`);
                     }
                     return null;
                 }
                 return json ?? {};
             } catch (err) {
                 this.log(`错误：${err.message}`);
-                alert(err.message);
+                this.showModal(err.message);
                 return null;
             }
         },
@@ -98,109 +127,29 @@ export const utilityMethods = {
             }
         },
         formatTime(value) {
-            if (!value) {
-                return '未知时间';
-            }
-            return new Date(value).toLocaleString();
+            if (!value) return '';
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleString('zh-CN', { hour12: false });
         },
-        formatNumber(value) {
-            if (value === null || value === undefined) {
-                return '0.00';
-            }
-            return Number(value).toFixed(2);
+        formatDate(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('zh-CN');
         },
-        displayDeviceStatus(status) {
-            const labels = {
-                AVAILABLE: '可用',
-                IN_USE: '占用',
-                MAINTENANCE: '维护',
-                OFFLINE: '离线'
-            };
-            if (!status) {
-                return '未知';
-            }
-            return labels[status] || status;
-        },
-        displayLockStatus(lockStatus, deviceStatus) {
-            if (deviceStatus === 'OFFLINE') {
-                return '--';
-            }
-            if (!lockStatus) {
-                return '--';
-            }
-            const labels = {
-                LOCKED: '锁已关',
-                UNLOCKED: '锁已开'
-            };
-            return labels[lockStatus] || lockStatus;
-        },
-        displayRentalStatus(status) {
-            const map = {
-                ACTIVE: '进行中',
-                COMPLETED: '已完成',
-                OVERDUE: '已逾期',
-                CANCELED: '已取消'
-            };
-            return map[status] || status || '未知';
-        },
-        shortId(value) {
-            if (!value) {
-                return '-';
-            }
-            return String(value).slice(0, 8);
-        },
-        rentalShortId(id) {
-            return this.shortId(id);
-        },
-        rentalDuration(rental) {
-            if (!rental || !rental.startedAt) {
-                return '未开始';
-            }
-            const start = new Date(rental.startedAt);
-            if (Number.isNaN(start.getTime())) {
-                return '未开始';
-            }
-            const end = rental.endedAt ? new Date(rental.endedAt) : this.now;
-            if (Number.isNaN(end.getTime())) {
-                return '未开始';
-            }
-            const diffMs = Math.max(0, end.getTime() - start.getTime());
-            const totalSeconds = Math.floor(diffMs / 1000);
-            const days = Math.floor(totalSeconds / 86400);
-            const hours = Math.floor((totalSeconds % 86400) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            const hh = String(hours).padStart(2, '0');
-            const mm = String(minutes).padStart(2, '0');
-            const ss = String(seconds).padStart(2, '0');
-            if (days > 0) {
-                return `${days}天 ${hh}:${mm}:${ss}`;
-            }
-            return `${hh}:${mm}:${ss}`;
-        },
-        canUnlockRental(rental) {
-            if (!rental) {
-                return false;
-            }
-            return rental.status === 'ACTIVE' || rental.status === 'OVERDUE';
-        },
-        canCancelRental(rental) {
-            if (!rental || rental.status !== 'ACTIVE') {
-                return false;
-            }
-            if (!rental.startedAt) {
-                return true;
-            }
-            const startedAt = new Date(rental.startedAt);
-            if (Number.isNaN(startedAt.getTime())) {
-                return true;
-            }
-            const nowReference = this.now;
-            if (!nowReference || Number.isNaN(nowReference.getTime())) {
-                return true;
-            }
-            const elapsedMs = Math.max(0, nowReference.getTime() - startedAt.getTime());
-            const fiveMinutesMs = 5 * 60 * 1000;
-            return elapsedMs <= fiveMinutesMs;
+        formatDateTime(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
         }
 };

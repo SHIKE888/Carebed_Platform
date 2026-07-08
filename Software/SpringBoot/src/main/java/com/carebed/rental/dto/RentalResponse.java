@@ -16,5 +16,6 @@ public record RentalResponse(
         double amount,
         long durationMinutes,
         String patientReference,
-        boolean disputeRaised) {
+        boolean disputeRaised,
+        Instant createdAt) {
 }

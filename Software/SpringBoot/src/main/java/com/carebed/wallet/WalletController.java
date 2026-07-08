@@ -5,9 +5,11 @@ import com.carebed.auth.AuthController;
 import com.carebed.auth.AuthService;
 import com.carebed.auth.UserAccount;
 import com.carebed.auth.UserRole;
+import com.carebed.common.model.OperationResult;
 import com.carebed.notification.NotificationService;
 import com.carebed.notification.NotificationType;
 import com.carebed.wallet.DisputeStatus;
+import com.carebed.wallet.dto.DisputeRefundRequest;
 import com.carebed.wallet.dto.DisputeRequest;
 import com.carebed.wallet.dto.DisputeResponse;
 import com.carebed.wallet.dto.DisputeUpdateRequest;
@@ -85,6 +87,12 @@ public class WalletController {
         return ResponseEntity.ok(walletService.listDisputes(Optional.ofNullable(status)));
     }
 
+    @GetMapping("/disputes/me")
+    public ResponseEntity<List<DisputeResponse>> myDisputes(@RequestHeader(AuthController.AUTH_HEADER) String token) {
+        UserAccount account = authService.authenticate(token);
+        return ResponseEntity.ok(walletService.listUserDisputes(account.id()));
+    }
+
     @PostMapping("/disputes/{id}")
     public ResponseEntity<DisputeResponse> updateDispute(@RequestHeader(AuthController.AUTH_HEADER) String token,
             @PathVariable UUID id,
@@ -97,5 +105,19 @@ public class WalletController {
         activityLogService.record(account.id(), account.fullName(), "WALLET_DISPUTE_UPDATE",
                 "更新争议 " + id + " -> " + request.status());
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/disputes/{id}/refund")
+    public ResponseEntity<OperationResult> disputeRefund(@RequestHeader(AuthController.AUTH_HEADER) String token,
+            @PathVariable UUID id,
+            @Valid @RequestBody DisputeRefundRequest request) {
+        UserAccount account = authService.authenticate(token);
+        if (account.role() != UserRole.ADMIN) {
+            return ResponseEntity.status(403).build();
+        }
+        walletService.disputeRefund(id, request.refundAmount());
+        activityLogService.record(account.id(), account.fullName(), "DISPUTE_REFUND",
+                "争议退费 " + id + " 金额 " + request.refundAmount());
+        return ResponseEntity.ok(OperationResult.of("退款成功，已退还 " + request.refundAmount() + " 元"));
     }
 }

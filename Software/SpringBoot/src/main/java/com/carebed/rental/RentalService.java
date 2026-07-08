@@ -229,7 +229,8 @@ public class RentalService {
                 record.amount(),
                 duration,
                 record.patientReference(),
-                record.disputeRaised());
+                record.disputeRaised(),
+                record.createdAt());
     }
 
     private RentalRecord toDomain(RentalRecordEntity entity) {

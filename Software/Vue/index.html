@@ -2,27 +2,25 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>CareBed 平台演示系统</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>码上安睡</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7Q8Y7bQAnNJo7XU9lrw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-        <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+        <link rel="stylesheet" href="./assets/css/main.css?v=18">
+        <span style="white-space:pre">	</span><link href="https://msas.absozero.cn/favicon.ico" rel="icon" type="image/x-icon" />
 </head>
 <body>
 <div id="app">
     <section class="hero">
         <div class="hero-inner">
-            <div class="hero-legend">
+            <div class="hero-legend" v-if="!session.token">
                 <span class="eyebrow">CAREBED PLATFORM</span>
-                <h1>{{ session.token ? '欢迎回来，' + session.displayName : '智慧陪护床运营演示系统' }}</h1>
-                <p>{{ session.token ? '当前会话已激活，可随时执行操作。' : '统一体验覆盖登录、设备、租借、钱包、报修与通知模块。' }}</p>
+                <h1>欢迎使用</h1>
+                 <h1>码上安睡共享陪护床系统</h1>
             </div>
             <div class="hero-meta">
-                <div class="chip">Spring Boot · Vue</div>
                 <div class="hero-meta-group">
-                    <span class="chip">REST API</span>
-                    <span class="chip">MQTT Broker</span>
-                    <span class="chip" v-if="logs.length">API 日志 {{ logs.length }}</span>
                 </div>
             </div>
         </div>
@@ -34,10 +32,9 @@
                 <button type="button" :class="{ active: authCard === 'login' }" @click="switchAuthCard('login')">登录账号</button>
                 <button type="button" :class="{ active: authCard === 'register' }" @click="switchAuthCard('register')">注册账号</button>
             </div>
-
+  <!-- 登录表单 -->
             <template v-if="authCard === 'login'">
-                <h2>账号登录</h2>
-                <p>使用已有账号登录，进入客户或运营控制台。</p>
+                <h2>登录</h2>
                 <form @submit.prevent="handleLogin" class="stack">
                     <label>
                         用户名
@@ -49,15 +46,55 @@
                     </label>
                     <button type="submit">登录</button>
                 </form>
+                
                 <p class="auth-hint">
-                    还没有账号？
-                    <button type="button" class="link-button" @click="switchAuthCard('register')">立即注册</button>
+                    忘记密码？
+                    <button type="button" class="link-button" @click="switchAuthCard('reset')">点击找回</button>
                 </p>
+            </template>
+
+            <template v-else-if="authCard === 'reset'">
+                <h2>重置密码</h2>
+                <form @submit.prevent="handleResetPassword" class="stack">
+                    <label>
+                        用户名
+                        <input type="text" v-model="resetForm.username" placeholder="请输入用户名" required>
+                    </label>
+                    <label>
+                        手机号
+                        <input type="tel" v-model="resetForm.phone" placeholder="请输入手机号" required>
+                    </label>
+                    <label>
+                        新密码
+                        <input type="password" v-model="resetForm.newPassword" placeholder="请输入新密码" required>
+                    </label>
+                    <button type="submit">重置密码</button>
+                </form>
+                <p class="auth-hint">
+                    <button type="button" class="link-button" @click="switchAuthCard('login')">返回登录</button>
+                </p>
+                
+                <div style="text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                    <div class="github-badge-big">
+                        <span class="badge-subject1">ICP备案</span>
+                        <span class="badge-value bg-blue">
+                            <a href="https://beian.miit.gov.cn/" target="_blank" style="color: white; text-decoration: none;">陇ICP备2024013668号</a>
+                        </span>
+                    </div>
+                    <br>
+                    <div class="github-badge-big">
+                        <span class="badge-subject">
+                            <img src="https://beian.mps.gov.cn/web/assets/logo01.6189a29f.png" height="16" width="15" style="vertical-align: middle;"/>
+                        </span>
+                        <span class="badge-value1 bg-orange">
+                            <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=62082102202094" target="_blank" style="color: white; text-decoration: none;">甘公网安备62082102202094号</a>
+                        </span>
+                    </div>
+                </div>
             </template>
 
             <template v-else>
                 <h2>注册新账号</h2>
-                <p>填写资料即可创建账号，完成后系统会自动为你登录。</p>
                 <form @submit.prevent="handleRegister" class="stack">
                     <label>
                         用户名
@@ -67,23 +104,6 @@
                         密码
                         <input type="password" v-model="registerForm.password" placeholder="请输入密码" required>
                     </label>
-                    <label>
-                        角色
-                        <select v-model="registerForm.role">
-                            <option value="FAMILY">陪护家属</option>
-                            <option value="ADMIN">运营管理员</option>
-                        </select>
-                    </label>
-                    <template v-if="registerForm.role === 'ADMIN'">
-                        <label>
-                            默认管理员账号
-                            <input type="text" v-model="registerForm.adminUsername" placeholder="请输入默认管理员账号" required>
-                        </label>
-                        <label>
-                            默认管理员密码
-                            <input type="password" v-model="registerForm.adminPassword" placeholder="请输入默认管理员密码" required>
-                        </label>
-                    </template>
                     <label>
                         姓名
                         <input type="text" v-model="registerForm.fullName" placeholder="请输入姓名" required>
@@ -105,66 +125,78 @@
             <div class="dashboard-shell">
                 <aside class="session-panel">
                     <article class="card" v-if="showTokenCard">
-                        <div class="panel-heading">
-                            <h2>{{ session.displayName }}</h2>
-                            <p>{{ session.role }}</p>
+                        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h2>{{ session.displayName }}</h2>
+                                <p>{{ displayUserRole(session.role) }}</p>
+                            </div>
+                                <button class="secondary" @click="logout" style="margin-left: 10px; padding: 6px 8px; font-size: 16px; width: 160px; text-align: center; white-space: nowrap;">退出登录</button>
                         </div>
-                        <p class="token-preview">Token 快照：{{ tokenPreview }}</p>
-                        <details class="token-details">
-                            <summary>展开查看完整 Token</summary>
-                            <code>{{ session.token }}</code>
-                        </details>
                     </article>
-                    <article class="card" v-if="showWorkspaceCard">
-                        <h3>工作区</h3>
-                        <div class="area-tabs">
-                            <button @click="switchArea('customer')" :class="{ secondary: activeArea !== 'customer' }" v-if="canSeeCustomer">客户门户</button>
-                            <button @click="switchArea('admin')" :class="{ secondary: activeArea !== 'admin' }" v-if="canSeeAdmin">管理后台</button>
-                        </div>
-                        <div class="session-actions">
-                            <button @click="activeArea === 'customer' ? loadCustomerDashboard() : loadAdminDashboard()">刷新当前视图</button>
-                            <button class="secondary" @click="logout">退出登录</button>
-                        </div>
-                        <ul class="session-stats" v-if="sessionHighlights.length">
-                            <li v-for="item in sessionHighlights" :key="item">{{ item }}</li>
-                        </ul>
+                    <article class="card admin-nav-card" v-if="canSeeAdmin && activeArea === 'admin' && !isMobile">
+                        <h3 class="admin-nav-title">管理菜单</h3>
+                        <nav class="admin-nav-list" aria-label="管理员左侧菜单">
+                            <button type="button" class="admin-nav-item" :class="{ active: adminDesktopTab === 'overview' }" @click="switchAdminDesktopTab('overview')">
+                                <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+                                <span>运营总览</span>
+                            </button>
+                            <button type="button" class="admin-nav-item" :class="{ active: adminDesktopTab === 'devices' }" @click="switchAdminDesktopTab('devices')">
+                                <i class="fa-solid fa-bed" aria-hidden="true"></i>
+                                <span>设备管理</span>
+                            </button>
+                            <button type="button" class="admin-nav-item" :class="{ active: adminDesktopTab === 'services' }" @click="switchAdminDesktopTab('services')">
+                                <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+                                <span>服务管理</span>
+                            </button>
+                            <button type="button" class="admin-nav-item" :class="{ active: adminDesktopTab === 'system' }" @click="switchAdminDesktopTab('system')">
+                                <i class="fa-solid fa-cog" aria-hidden="true"></i>
+                                <span>用户与通知管理</span>
+                            </button>
+                        </nav>
                     </article>
                 </aside>
 
                 <section class="area-content">
                     <section class="area-pane" v-if="activeArea === 'customer' && canSeeCustomer">
-                        <article class="card area-header-card">
-                            <div class="area-header-top">
-                                <h2>客户门户</h2>
-                                <div class="time-indicator">当前北京时间：{{ beijingTime }}</div>
-                            </div>
-                            <p class="area-header-sub">实时同步钱包、租借、报修与消息，协助陪护家属完成自助操作。</p>
-                        </article>
+                         <article class="card" v-if="showMobileSection('devices')">
+                                <div class="area-header-top">
+                                    <h2>🛏️ 快速租借</h2>
+                                    <div class="time-indicator">当前北京时间：{{ beijingTime }}</div>
+                                </div>
+                            </article>
                         <div class="area-grid">
+                            <!-- 钱包与充值卡片（仅余额和充值） -->
                             <article class="card" v-if="showMobileSection('mine')">
                                 <div class="section-title">
-                                    <h3>钱包与充值</h3>
+                                    <h3>💰 钱包与充值</h3>
                                     <button class="btn-refresh" @click="refreshWallet">刷新</button>
                                 </div>
-                                <p v-if="customer.wallet">
-                                    当前余额：<strong>{{ formatNumber(customer.wallet.balance) }} 元</strong>
-                                    <br>
-                                    <span class="muted">最近更新：{{ formatTime(customer.wallet.updatedAt) }}</span>
-                                </p>
-                                <p v-else class="muted">尚未拉取钱包信息，点击刷新即可同步。</p>
-                                <form class="form-inline" style="margin-top:1rem;" @submit.prevent="submitRecharge">
-                                    <label>
+                                <div v-if="customer.wallet" style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f7ff; border-radius: 6px; border-left: 4px solid #0d6efd;">
+                                    <div style="margin-bottom: 0.25rem;">当前余额：<strong style="font-size: 1.2rem; color: #0d6efd;">{{ formatNumber(customer.wallet.balance) }} 元</strong></div>
+                                    <div class="muted" style="font-size: 0.85rem;">最近更新：{{ formatTime(customer.wallet.updatedAt) }}</div>
+                                </div>
+                                <p v-else class="muted" style="margin-bottom: 0.75rem;">尚未拉取钱包信息，点击刷新即可同步。</p>
+                                <form class="form-inline" style="margin-bottom: 0.75rem;" @submit.prevent="submitRecharge">
+                                    <label style="margin-bottom: 0.5rem;">
                                         充值金额
                                         <input type="number" min="1" step="1" v-model.number="customer.rechargeAmount" required>
                                     </label>
                                     <button type="submit">充值</button>
                                 </form>
-                                <h4 style="margin-top:1.25rem;">交易记录</h4>
-                                <table v-if="customer.wallet && customer.wallet.transactions.length">
+                            </article>
+
+                            <!-- 交易记录与费用争议合并卡片 -->
+                            <article class="card" v-if="showMobileSection('mine')">
+                                <div class="section-title">
+                                    <h3>📑 交易记录与费用争议</h3>
+                                </div>
+                                <h4 style="margin-top: 0.75rem; margin-bottom: 0.5rem;">交易记录</h4>
+                                <template v-if="customer.wallet &amp;&amp; Array.isArray(customer.wallet.transactions) &amp;&amp; customer.wallet.transactions.length">
+                                    <table>
                                     <thead>
                                         <tr>
                                             <th>时间</th>
-                                            <th>类型</th>
+                                            <th style="white-space: nowrap;">类型</th>
                                             <th>金额</th>
                                             <th>备注</th>
                                         </tr>
@@ -172,23 +204,55 @@
                                     <tbody>
                                         <tr v-for="txn in pagedWalletTransactions" :key="txn.id">
                                             <td>{{ formatTime(txn.occurredAt) }}</td>
-                                            <td>{{ txn.type }}</td>
+                                            <td class="nowrap">{{ displayTransactionType(txn.type) }}</td>
                                             <td>{{ formatNumber(txn.amount) }}</td>
                                             <td>{{ txn.reference || txn.notes }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                                 <div class="pager" v-if="transactionsTotalPages > 1">
-                                    <button type="button" class="secondary" :disabled="pagination.transactions === 1" @click="changePage('transactions', -1, transactionsTotalPages)">上一页</button>
-                                    <span class="pager-info">第 {{ pagination.transactions }} / {{ transactionsTotalPages }} 页</span>
-                                    <button type="button" class="secondary" :disabled="pagination.transactions === transactionsTotalPages" @click="changePage('transactions', 1, transactionsTotalPages)">下一页</button>
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.transactions }} / {{ transactionsTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.transactions === 1" @click="changePage('transactions', -1, transactionsTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.transactions === transactionsTotalPages" @click="changePage('transactions', 1, transactionsTotalPages)">下一页</button>
+                                    </div>
                                 </div>
+                                </template>
                                 <p v-else class="muted">暂无交易记录。</p>
-                                <h4 style="margin-top:1.25rem;">费用争议</h4>
-                                <form class="stack" @submit.prevent="submitDispute">
+                                <h4 style="margin-top:1.25rem; margin-bottom: 0.5rem;">⚠️ 费用争议 <span v-if="customer.disputes.filter(d => d.status === 'OPEN').length" style="font-size: 0.85rem; color: #dc3545;">({{ customer.disputes.filter(d => d.status === 'OPEN').length }} 待处理)</span></h4>
+                                <form class="stack" @submit.prevent="submitDispute" style="margin-bottom: 0.75rem;">
                                     <label>
                                         订单号
-                                        <input type="text" v-model="customer.disputeForm.orderId" placeholder="租借订单号" required>
+                                        <!-- 微信浏览器使用自定义弹窗 -->
+                                        <div v-if="isWechat" class="custom-select-container">
+                                            <div class="custom-select" @click="toggleOrderSelect">
+                                                <input type="text" :value="selectedOrderText" readonly placeholder="选择订单号" class="select-input">
+                                                <span class="select-arrow">▼</span>
+                                            </div>
+                                            <!-- 固定在页面中间的选择弹窗 -->
+                                            <div v-if="customer.showOrderSelect" class="select-modal-overlay" @click="customer.showOrderSelect = false">
+                                                <div class="select-modal" @click.stop>
+                                                    <div class="select-header">
+                                                        <span>选择订单号</span>
+                                                        <span class="select-close" @click="customer.showOrderSelect = false">&times;</span>
+                                                    </div>
+                                                    <div class="select-options">
+                                                        <div v-for="rental in customer.rentals" :key="rental.id"
+                                                             class="select-option" @click="customer.disputeForm.orderId = rental.id; customer.showOrderSelect = false">
+                                                                <span class="option-text">{{ rentalShortId(rental.id) }} · {{ displayRentalStatus(rental.status) }} · {{ formatTime(rental.startedAt || rental.createdAt) }}</span>
+                                                                <span class="option-check" v-if="customer.disputeForm.orderId === rental.id">✓</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 其他浏览器使用原生select -->
+                                        <select v-else v-model="customer.disputeForm.orderId" required>
+                                            <option value="">选择订单号</option>
+                                            <option v-for="rental in customer.rentals" :key="rental.id" :value="rental.id">
+                                                {{ rentalShortId(rental.id) }} · {{ displayRentalStatus(rental.status) }} · {{ formatTime(rental.startedAt || rental.createdAt) }}
+                                            </option>
+                                        </select>
                                     </label>
                                     <label>
                                         申诉原因
@@ -196,65 +260,160 @@
                                     </label>
                                     <button type="submit">提交争议</button>
                                 </form>
-                                <ul class="list-plain" style="margin-top:1rem;">
-                                    <li v-for="dispute in customer.disputes" :key="dispute.id">
-                                        <strong>{{ dispute.orderId }}</strong> · {{ dispute.status }}
-                                        <div class="muted">{{ dispute.reason }}</div>
-                                    </li>
-                                </ul>
+                                <div style="margin-bottom: 0.5rem;">
+                                    <button type="button" class="secondary" @click="toggleDisputeHistory">
+                                        查看历史争议
+                                    </button>
+                                </div>
+                                <div class="device-edit-modal" v-if="showAllDisputes" @click="showAllDisputes = false">
+                                    <article class="card device-edit-modal-card" @click.stop>
+                                        <div class="section-title device-edit-title" style="margin-bottom: 0.5rem;">
+                                            <h3>历史争议记录</h3>
+                                            <span class="device-edit-close" role="button" tabindex="0" aria-label="关闭弹窗" @click="showAllDisputes = false" @keydown.enter="showAllDisputes = false" @keydown.space.prevent="showAllDisputes = false">&times;</span>
+                                        </div>
+                                        <p v-if="isLoadingDisputes" class="muted">正在加载历史争议...</p>
+                                        <div v-else style="margin-bottom: 0.75rem;">
+                                            <label style="margin-bottom: 0;">
+                                                状态筛选
+                                                <select v-model="customer.disputeStatusFilter">
+                                                    <option value="">全部状态</option>
+                                                    <option value="OPEN">待处理</option>
+                                                    <option value="IN_REVIEW">处理中</option>
+                                                    <option value="RESOLVED">已解决</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                        <ul class="list-plain" v-if="!isLoadingDisputes">
+                                            <li v-if="!filteredCustomerDisputes.length" class="muted">暂无历史争议。</li>
+                                            <li v-for="dispute in filteredCustomerDisputes" :key="dispute.id" style="padding: 0.5rem; border-left: 3px solid; margin-bottom: 0.5rem;" :style="{borderColor: disputeStatusColor(dispute.status)}">
+                                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 0.5rem;" :style="{background: disputeStatusColor(dispute.status)}"></span>
+                                                <strong>订单号：</strong>{{ dispute.orderId }}
+                                                <span style="margin-left: 0.5rem;">状态：{{ displayDisputeStatus(dispute.status) }}</span>
+                                                <div class="muted" style="font-size: 0.85rem;">原因：{{ dispute.reason }}</div>
+                                                <div class="muted" v-if="dispute.resolution" style="font-size: 0.85rem;">处理：{{ dispute.resolution }}</div>
+                                                <div class="muted" style="font-size: 0.8rem;">提交时间：{{ formatTime(dispute.createdAt) }}</div>
+                                            </li>
+                                        </ul>
+                                    </article>
+                                </div>
+                            </article>
+
+                           
+
+                            <article class="card" v-if="showMobileSection('devices')">
+                                <p v-if="lockedDeviceCode && !isAdmin" class="muted" style="margin:0.5rem 0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码）</p>
+                                
+                                <!-- 当前租借状态 -->
+                                <div v-if="currentRental" class="rental-timer">
+                                    <h3>当前租借</h3>
+                                    <div class="timer-display">
+                                        <p>设备：{{ currentRental.deviceCode }}</p>
+                                        <p class="timer">已使用：{{ formatRentalDuration(currentRental.startedAt) }}</p>
+                                        <p>预计费用：{{ calculateRentalFee(currentRental.startedAt) }} 元</p>
+                                    </div>
+                                    <div class="rental-actions-row">
+                                        <button type="button" @click="toggleTemporaryLock(currentRental)" class="temp-lock-button" :class="{ active: isTemporaryLocked }" :disabled="returningRentalId === currentRental.id">
+                                            {{ isTemporaryLocked ? '🔓 解锁' : '🔒 临时关锁' }}
+                                        </button>
+                                        <button type="button" @click="returnRental(currentRental.id)" class="return-button" :disabled="returningRentalId === currentRental.id">
+                                            {{ returningRentalId === currentRental.id ? '归还处理中...' : '归还设备' }}
+                                        </button>
+                                    </div>
+                                    <div v-if="isTemporaryLocked" class="temp-lock-hint">
+                                        ⚠️ 设备已临时关锁，计时计费继续进行中
+                                    </div>
+                                </div>
+                                
+                                <!-- 租借选项 -->
+                                <div v-else>
+                                    <div class="rental-option">
+                                        <button type="button" :class="{ active: rentalOption === 'manual' }" @click="rentalOption = 'manual'">手动选择</button>
+                                        <button type="button" :class="{ active: rentalOption === 'scan' }" @click="enterScanMode">扫码租借</button>
+                                    </div>
+                                    
+                                    <form class="stack" @submit.prevent="startRental" v-if="rentalOption === 'manual'">
+                                        <label>
+                                            设备编号
+                                            <!-- 微信浏览器使用自定义弹窗 -->
+                                            <div v-if="isWechat" class="custom-select-container">
+                                                <div class="custom-select" @click="toggleDeviceSelect">
+                                                    <input type="text" :value="selectedDeviceText" readonly placeholder="请选择设备" class="select-input" :disabled="!!lockedDeviceCode && !isAdmin">
+                                                    <span class="select-arrow">▼</span>
+                                                </div>
+                                                <!-- 固定在页面中间的选择弹窗 -->
+                                                <div v-if="customer.showDeviceSelect" class="select-modal-overlay" @click="customer.showDeviceSelect = false">
+                                                    <div class="select-modal" @click.stop>
+                                                        <div class="select-header">
+                                                            <span>请选择设备</span>
+                                                            <span class="select-close" @click="customer.showDeviceSelect = false">&times;</span>
+                                                        </div>
+                                                        <div class="select-options">
+                                                            <div v-for="device in customer.devices.filter(d => d.status === 'AVAILABLE')" :key="device.id"
+                                                                 class="select-option" @click="customer.rentalForm.deviceCode = device.deviceCode; customer.showDeviceSelect = false">
+                                                                    <span class="option-text">{{ device.deviceCode }} ({{ device.ward }}·床位 {{ device.bedNumber }})</span>
+                                                                    <span class="option-check" v-if="customer.rentalForm.deviceCode === device.deviceCode">✓</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- 其他浏览器使用原生select -->
+                                            <select v-else v-model="customer.rentalForm.deviceCode" required :disabled="!!lockedDeviceCode && !isAdmin">
+                                                <option value="" disabled selected>请选择设备</option>
+                                                <option v-for="device in customer.devices.filter(d => d.status === 'AVAILABLE')" :key="device.id" :value="device.deviceCode">
+                                                    {{ device.deviceCode }} ({{ device.ward }}·床位 {{ device.bedNumber }})
+                                                </option>
+                                            </select>
+                                        </label>
+                                        <button type="submit">发起租借</button>
+                                    </form>
+                                    
+                                    <div class="scan-section" v-else-if="rentalOption === 'scan'">
+                                        <div id="qr-scanner" style="width: 100%; max-width: 300px; margin: 0 auto;">
+                                            <video id="preview" autoplay playsinline muted style="width: 100%; border-radius: 8px;"></video>
+                                        </div>
+                                        <p class="muted" style="text-align: center; margin: 1rem 0;">请将摄像头对准二维码</p>
+                                        <button type="button" @click="startScan">开始扫码</button>
+                                        <button type="button" @click="stopScan" v-if="scanning">停止扫码</button>
+                                    </div>
+                                </div>
                             </article>
 
                             <article class="card horizontal-card" v-if="showMobileSection('devices')">
                                 <div class="section-title">
-                                    <h3>设备列表</h3>
+                                    <h3>空闲设备 (共 {{ customer.devices.filter(d => d.status === 'AVAILABLE').length }} 台)</h3>
                                     <button class="btn-refresh" @click="refreshCustomerDevices">刷新</button>
                                 </div>
-                                <div class="horizontal-content">
-                                    <p class="muted">展示当前所有设备状态，便于挑选可租借的设备。</p>
-                                    <ul class="list-plain device-list">
-                                        <li v-for="device in pagedCustomerDevices" :key="device.id">
-                                            <span class="status-dot" :class="`status-${device.status}`"></span>
-                                            <div class="device-entry-head">
-                                                <strong>{{ device.deviceCode }}</strong>
-                                                <span class="badge">{{ displayDeviceStatus(device.status) }}</span>
-                                            </div>
-                                            <div class="muted">{{ device.ward }} · 床位 {{ device.bedNumber }}</div>
-                                            <div class="muted">状态：{{ displayLockStatus(device.lockStatus, device.status) }}</div>
-                                        </li>
-                                    </ul>
-                                    <div class="pager" v-if="devicesTotalPages > 1">
+                                <input v-if="customer.devices.length > 3" type="text" v-model="customer.deviceSearchKeyword" placeholder="搜索设备编号或病区..." style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
+                                <ul class="list-plain device-list">
+                                    <li v-for="device in filteredCustomerDevices" :key="device.id">
+                                        <span class="status-dot" :class="`status-${device.status}`"></span>
+                                        <div class="device-entry-head">
+                                            <strong>{{ device.deviceCode }}</strong>
+                                            <span class="badge">{{ displayDeviceStatus(device.status) }}</span>
+                                        </div>
+                                        <div class="muted">{{ device.ward }}·床位 {{ device.bedNumber }}</div>
+                                        <div class="muted" style="font-size: 0.85rem;">锁定：{{ displayLockStatus(device.lockStatus, device.status) }}</div>
+                                    </li>
+                                </ul>
+                                <p v-if="filteredCustomerDevices.length === 0" class="muted" style="text-align: center;">当前暂无空闲设备</p>
+                                <div class="pager" v-if="devicesTotalPages > 1" style="display: flex; flex-direction: column; align-items: center;">
+                                    <span class="pager-info" style="margin-bottom: 5px;">第 {{ pagination.devices }} / {{ devicesTotalPages }} 页</span>
+                                    <div style="display: flex; gap: 10px;">
                                         <button type="button" class="secondary" :disabled="pagination.devices === 1" @click="changePage('devices', -1, devicesTotalPages)">上一页</button>
-                                        <span class="pager-info">第 {{ pagination.devices }} / {{ devicesTotalPages }} 页</span>
                                         <button type="button" class="secondary" :disabled="pagination.devices === devicesTotalPages" @click="changePage('devices', 1, devicesTotalPages)">下一页</button>
                                     </div>
                                 </div>
                             </article>
 
-                            <article class="card" v-if="showMobileSection('devices')">
-                                <div class="section-title">
-                                    <h3>快速租借</h3>
-                                </div>
-                                <p v-if="lockedDeviceCode && !isAdmin" class="muted" style="margin:0;">已锁定设备：{{ lockedDeviceCode }}（来源二维码）</p>
-                                <form class="stack" @submit.prevent="startRental">
-                                    <label>
-                                        设备编号
-                                        <input type="text" v-model="customer.rentalForm.deviceCode" placeholder="BED-0001" required :disabled="!!lockedDeviceCode && !isAdmin">
-                                    </label>
-                                    <label>
-                                        预期租借时长（小时）
-                                        <input type="number" min="1" max="14" v-model.number="customer.rentalForm.expectedHours" required>
-                                    </label>
-                                    <button type="submit">发起租借</button>
-                                </form>
-                            </article>
-
                             <article class="card" v-if="showMobileSection('orders')">
                                 <div class="section-title">
-                                    <h3>租借记录</h3>
+                                    <h3>📋 租借记录 (共 {{ customer.rentals.length }} 个)</h3>
                                 </div>
                                 <table class="table-compact rentals-table">
                                     <thead>
                                         <tr>
+                                            <th style="width: 20px;"></th>
                                             <th class="nowrap">订单号</th>
                                             <th>状态</th>
                                             <th class="nowrap">时长</th>
@@ -264,6 +423,9 @@
                                     <tbody>
                                         <template v-for="rental in pagedCustomerRentals" :key="rental.id">
                                             <tr>
+                                                <td style="text-align: center;">
+                                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%;" :style="{background: rental.status === 'ACTIVE' ? '#ff9800' : rental.status === 'COMPLETED' ? '#28a745' : rental.status === 'OVERDUE' ? '#dc3545' : '#6c757d'}"></span>
+                                                </td>
                                                 <td class="nowrap">{{ rentalShortId(rental.id) }}</td>
                                                 <td>{{ displayRentalStatus(rental.status) }}</td>
                                                 <td class="nowrap">{{ rentalDuration(rental) }}</td>
@@ -274,19 +436,24 @@
                                                 </td>
                                             </tr>
                                             <tr v-if="isRentalExpanded(rental.id)" class="rental-detail-row">
-                                                <td colspan="4">
+                                                <td colspan="5">
                                                     <div class="rental-detail">
                                                         <p><strong>完整订单号：</strong>{{ rental.id }}</p>
                                                         <p><strong>设备编号：</strong>{{ rental.deviceCode }}</p>
                                                         <p><strong>计费金额：</strong>{{ formatNumber(rental.amount) }} 元</p>
                                                         <p><strong>开始时间：</strong>{{ formatTime(rental.startedAt) }}</p>
-                                                        <p v-if="rental.expectedEndAt"><strong>预期结束：</strong>{{ formatTime(rental.expectedEndAt) }}</p>
+
                                                         <p v-if="rental.endedAt"><strong>归还时间：</strong>{{ formatTime(rental.endedAt) }}</p>
-                                                        <div class="rental-actions">
-                                                            <button v-if="canUnlockRental(rental)" @click="unlockRental(rental)" class="secondary">开锁</button>
-                                                            <button v-if="rental.status === 'ACTIVE'" @click="returnRental(rental.id)" class="secondary">归还</button>
-                                                            <button v-if="rental.status === 'ACTIVE' && canCancelRental(rental)" @click="cancelRentalUser(rental.id)" class="secondary">取消</button>
-                                                        </div>
+
+                                                        <button
+                                                            v-if="rental.status === 'ACTIVE' || rental.status === 'OVERDUE'"
+                                                            type="button"
+                                                            class="return-button"
+                                                            @click="returnRental(rental.id)"
+                                                            :disabled="returningRentalId === rental.id">
+                                                            {{ returningRentalId === rental.id ? '归还处理中...' : '归还设备' }}
+                                                        </button>
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -294,25 +461,50 @@
                                     </tbody>
                                 </table>
                                 <div class="pager" v-if="rentalsTotalPages > 1">
-                                    <button type="button" class="secondary" :disabled="pagination.rentals === 1" @click="changePage('rentals', -1, rentalsTotalPages)">上一页</button>
-                                    <span class="pager-info">第 {{ pagination.rentals }} / {{ rentalsTotalPages }} 页</span>
-                                    <button type="button" class="secondary" :disabled="pagination.rentals === rentalsTotalPages" @click="changePage('rentals', 1, rentalsTotalPages)">下一页</button>
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.rentals }} / {{ rentalsTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.rentals === 1" @click="changePage('rentals', -1, rentalsTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.rentals === rentalsTotalPages" @click="changePage('rentals', 1, rentalsTotalPages)">下一页</button>
+                                    </div>
                                 </div>
                             </article>
 
                             <article class="card horizontal-card" v-if="showMobileSection('orders')">
                                 <div class="section-title">
-                                    <h3>报修中心</h3>
-                                    <button class="btn-refresh" @click="refreshCustomerRepairs">刷新</button>
+                                    <h3>🔧 报修中心 <span v-if="customer.repairs.filter(t => t.status === 'OPEN').length || customer.repairs.filter(t => t.status === 'IN_PROGRESS').length" style="font-size: 0.9rem; color: #ff9800; margin-left: 0.5rem;">({{ customer.repairs.filter(t => t.status === 'OPEN').length + customer.repairs.filter(t => t.status === 'IN_PROGRESS').length }} 待处理)</span></h3>
                                 </div>
                                 <div class="horizontal-content">
                                     <form class="stack" @submit.prevent="submitRepairTicket">
                                         <label>
                                             租借订单
-                                            <select v-model="customer.repairForm.rentalId" required>
+                                            <!-- 微信浏览器使用自定义弹窗 -->
+                                            <div v-if="isWechat" class="custom-select-container">
+                                                <div class="custom-select" @click="toggleRentalSelect">
+                                                    <input type="text" :value="selectedRentalText" readonly placeholder="选择租借订单" class="select-input">
+                                                    <span class="select-arrow">▼</span>
+                                                </div>
+                                                <!-- 固定在页面中间的选择弹窗 -->
+                                                <div v-if="customer.showRentalSelect" class="select-modal-overlay" @click="customer.showRentalSelect = false">
+                                                    <div class="select-modal" @click.stop>
+                                                        <div class="select-header">
+                                                            <span>选择租借订单</span>
+                                                            <span class="select-close" @click="customer.showRentalSelect = false">&times;</span>
+                                                        </div>
+                                                        <div class="select-options">
+                                                            <div v-for="rental in customer.rentals" :key="rental.id"
+                                                                 class="select-option" @click="customer.repairForm.rentalId = rental.id; customer.showRentalSelect = false">
+                                                                    <span class="option-text">{{ rental.deviceCode }} · {{ displayRentalStatus(rental.status) }} · {{ formatTime(rental.startedAt || rental.createdAt) }}</span>
+                                                                    <span class="option-check" v-if="customer.repairForm.rentalId === rental.id">✓</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- 其他浏览器使用原生select -->
+                                            <select v-else v-model="customer.repairForm.rentalId" required>
                                                 <option value="">选择租借订单</option>
                                                 <option v-for="rental in customer.rentals" :key="rental.id" :value="rental.id">
-                                                    {{ rental.deviceCode }} · {{ rental.status }}
+                                                    {{ rental.deviceCode }} · {{ displayRentalStatus(rental.status) }} · {{ formatTime(rental.startedAt || rental.createdAt) }}
                                                 </option>
                                             </select>
                                         </label>
@@ -320,25 +512,52 @@
                                             故障描述
                                             <textarea rows="3" v-model="customer.repairForm.description" required></textarea>
                                         </label>
-                                        <label>
-                                            照片链接（逗号分隔，可选）
-                                            <input type="text" v-model="customer.repairForm.photos" placeholder="https://...">
-                                        </label>
+                                        <!-- 故障照片功能已注释掉 -->
+                                        <!-- <label>
+                                            故障照片（可选）
+                                            <input ref="repairPhotoInput" type="file" accept="image/*" multiple style="display:none" @change="handleRepairPhotoChange">
+                                            <div class="repair-photo-picker">
+                                                <button type="button" class="secondary repair-photo-add" @click="triggerRepairPhotoPicker">+</button>
+                                                <span class="muted">点击加号从相册选择图片（最多 6 张）</span>
+                                            </div>
+                                            <div class="repair-photo-grid" v-if="customer.repairForm.photos.length">
+                                                <div class="repair-photo-item" v-for="(photo, index) in customer.repairForm.photos" :key="photo.url">
+                                                    <img :src="photo.url" alt="报修照片预览">
+                                                    <button type="button" class="repair-photo-remove" @click="removeRepairPhoto(index)">&times;</button>
+                                                </div>
+                                            </div>
+                                        </label> -->
                                         <button type="submit">提交报修</button>
                                     </form>
                                     <div class="stack" style="margin:0;">
-                                        <h4 style="margin:0;">报修进度</h4>
-                                        <ul class="list-plain">
-                                            <li v-for="ticket in pagedCustomerRepairs" :key="ticket.id">
-                                                <strong>{{ ticket.deviceCode }}</strong> · {{ ticket.status }}
-                                                <div class="muted">提交时间：{{ formatTime(ticket.createdAt) }}</div>
-                                                <div class="muted" v-if="ticket.resolution">处理说明：{{ ticket.resolution }}</div>
-                                            </li>
-                                        </ul>
-                                        <div class="pager" v-if="repairsTotalPages > 1">
-                                            <button type="button" class="secondary" :disabled="pagination.repairs === 1" @click="changePage('repairs', -1, repairsTotalPages)">上一页</button>
-                                            <span class="pager-info">第 {{ pagination.repairs }} / {{ repairsTotalPages }} 页</span>
-                                            <button type="button" class="secondary" :disabled="pagination.repairs === repairsTotalPages" @click="changePage('repairs', 1, repairsTotalPages)">下一页</button>
+                                        <div style="margin-bottom: 0.5rem;">
+                                            <button type="button" class="secondary" @click="toggleRepairHistory">
+                                                查看历史故障提交
+                                            </button>
+                                        </div>
+                                        <div class="device-edit-modal" v-if="showAllRepairs" @click="showAllRepairs = false">
+                                            <article class="card device-edit-modal-card" @click.stop>
+                                                <div class="section-title device-edit-title" style="margin-bottom: 0.5rem;">
+                                                    <h3>历史报修记录</h3>
+                                                    <span class="device-edit-close" role="button" tabindex="0" aria-label="关闭弹窗" @click="showAllRepairs = false" @keydown.enter="showAllRepairs = false" @keydown.space.prevent="showAllRepairs = false">&times;</span>
+                                                </div>
+                                                <ul class="list-plain">
+                                                    <li v-if="!filteredCustomerRepairHistory.length" class="muted">暂无历史报修。</li>
+                                                    <li v-for="ticket in filteredCustomerRepairHistory" :key="ticket.id" style="padding: 0.5rem; border-left: 3px solid; margin-bottom: 0.5rem;" :style="{borderColor: repairStatusColor(ticket.status)}">
+                                                        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 0.5rem;" :style="{background: repairStatusColor(ticket.status)}"></span>
+                                                        <strong>{{ ticket.deviceCode }}</strong> · {{ displayRepairStatus(ticket.status) }}
+                                                        <div class="muted" style="font-size: 0.85rem;">故障描述：{{ ticket.description }}</div>
+                                                        <div class="muted" v-if="ticket.resolution" style="font-size: 0.85rem;">处理说明：{{ ticket.resolution }}</div>
+                                                        <div class="muted" style="font-size: 0.8rem;">提交时间：{{ formatTime(ticket.createdAt) }}</div>
+                                                        <!-- 故障照片显示已注释掉 -->
+                                                        <!-- <div class="repair-photo-grid" v-if="ticket.photos && ticket.photos.length">
+                                                            <div class="repair-photo-item" v-for="(photo, index) in ticket.photos" :key="index">
+                                                                <img :src="photo" :alt="'故障照片 ' + (index + 1)" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                                            </div>
+                                                        </div> -->
+                                                    </li>
+                                                </ul>
+                                            </article>
                                         </div>
                                     </div>
                                 </div>
@@ -346,7 +565,7 @@
 
                             <article class="card horizontal-card" v-if="showMobileSection('messages')">
                                 <div class="section-title">
-                                    <h3>通知中心</h3>
+                                    <h3>📬通知中心</h3>
                                     <div class="pill-select">
                                         <button @click="customer.messageFilter = 'all'" :class="{ secondary: customer.messageFilter !== 'all' }">全部</button>
                                         <button @click="customer.messageFilter = 'unread'" :class="{ secondary: customer.messageFilter !== 'unread' }">未读</button>
@@ -354,12 +573,12 @@
                                     </div>
                                 </div>
                                 <div class="horizontal-content">
-                                    <p class="muted">集中展示系统推送通知，可快速筛选未读消息并标记处理。</p>
                                     <ul class="list-plain">
-                                        <li v-for="msg in pagedCustomerMessages" :key="msg.id">
-                                            <div>
+                                        <li v-for="msg in pagedCustomerMessages" :key="msg.id" style="padding: 0.75rem; border-left: 3px solid; border-radius: 4px;" :style="{borderColor: msg.read ? '#28a745' : '#dc3545'}">
+                                            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto;" :style="{background: msg.read ? '#28a745' : '#dc3545'}"></span>
                                                 <strong>{{ msg.title }}</strong>
-                                                <span class="badge">{{ msg.type }}</span>
+                                                <span class="badge">{{ displayNotificationType(msg.type) }}</span>
                                             </div>
                                             <div class="muted">{{ formatTime(msg.createdAt) }}</div>
                                             <p>{{ msg.content }}</p>
@@ -367,9 +586,11 @@
                                         </li>
                                     </ul>
                                     <div class="pager" v-if="messagesTotalPages > 1">
-                                        <button type="button" class="secondary" :disabled="pagination.messages === 1" @click="changePage('messages', -1, messagesTotalPages)">上一页</button>
-                                        <span class="pager-info">第 {{ pagination.messages }} / {{ messagesTotalPages }} 页</span>
-                                        <button type="button" class="secondary" :disabled="pagination.messages === messagesTotalPages" @click="changePage('messages', 1, messagesTotalPages)">下一页</button>
+                                        <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.messages }} / {{ messagesTotalPages }} 页</span></div>
+                                        <div style="display: flex; justify-content: center; gap: 10px;">
+                                            <button type="button" class="secondary" :disabled="pagination.messages === 1" @click="changePage('messages', -1, messagesTotalPages)">上一页</button>
+                                            <button type="button" class="secondary" :disabled="pagination.messages === messagesTotalPages" @click="changePage('messages', 1, messagesTotalPages)">下一页</button>
+                                        </div>
                                     </div>
                                 </div>
                             </article>
@@ -377,87 +598,243 @@
                     </section>
 
                     <section class="area-pane" v-if="activeArea === 'admin' && canSeeAdmin">
-                        <article class="card area-header-card">
-                            <div class="area-header-top">
-                                <h2>管理后台</h2>
-                                <div class="time-indicator">当前北京时间：{{ beijingTime }}</div>
-                            </div>
-                            <p class="area-header-sub">掌握运营指标、设备状态与租借流程，支持远程维护与通知广播。</p>
-                        </article>
+
                         <div class="area-grid">
-                            <article class="card">
+
+                            <!-- 系统告警面板 -->
+                            <article class="card grid-span-full" v-if="showAdminSection('overview') && admin.overview">
                                 <div class="section-title">
-                                    <h3>运营总览</h3>
+                                    <h3>⚠️ 系统告警</h3>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                    <!-- 离线设备告警 -->
+                                    <div v-if="admin.overview.offlineDevices > 0" style="padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #856404;">📴 设备离线</div>
+                                        <div style="font-size: 2rem; color: #d39e00; margin: 0.5rem 0;">{{ admin.overview.offlineDevices }}</div>
+                                        <div style="font-size: 0.85rem; color: #7d6608;">台设备离线，请检查连接</div>
+                                    </div>
+                                    <!-- 维修中告警 -->
+                                    <div v-if="admin.overview.maintenanceDevices > 0" style="padding: 1rem; background: #d1ecf1; border-left: 4px solid #17a2b8; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #0c5460;">🔧 设备维修</div>
+                                        <div style="font-size: 2rem; color: #138496; margin: 0.5rem 0;">{{ admin.overview.maintenanceDevices }}</div>
+                                        <div style="font-size: 0.85rem; color: #0a4a52;">台设备在维修中</div>
+                                    </div>
+                                    <!-- 逾期订单告警 -->
+                                    <div v-if="admin.overview.overdueRentals > 0" style="padding: 1rem; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #721c24;">⏰ 逾期订单</div>
+                                        <div style="font-size: 2rem; color: #c82333; margin: 0.5rem 0;">{{ admin.overview.overdueRentals }}</div>
+                                        <div style="font-size: 0.85rem; color: #7a1220;">个订单已逾期，需要处理</div>
+                                    </div>
+                                    <!-- 待处理维修告警 -->
+                                    <div v-if="admin.overview.openRepairs > 0" style="padding: 1rem; background: #cce5ff; border-left: 4px solid #0d6efd; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #084298;">📋 待处理工单</div>
+                                        <div style="font-size: 2rem; color: #0d5be6; margin: 0.5rem 0;">{{ admin.overview.openRepairs }}</div>
+                                        <div style="font-size: 0.85rem; color: #064d9b;">件工单待处理</div>
+                                    </div>
+                                    <!-- 绿色健康指示 -->
+                                    <div v-if="admin.overview.offlineDevices === 0 && admin.overview.maintenanceDevices === 0 && admin.overview.overdueRentals === 0 && admin.overview.openRepairs === 0" style="padding: 1rem; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #155724;">✅ 系统正常</div>
+                                        <div style="font-size: 1.5rem; color: #1e7e34; margin: 0.5rem 0;">100%</div>
+                                        <div style="font-size: 0.85rem; color: #0d5e1d;">全部系统运行正常</div>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- 关键指标卡片 -->
+                            <article class="card grid-span-full" v-if="showAdminSection('overview') && admin.overview">
+                                <div class="section-title">
+                                    <h3>📈 关键指标</h3>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                                    <!-- 设备可用率 -->
+                                    <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">设备空闲率</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: #28a745;">{{ admin.overview.totalDevices > 0 ? Math.round((admin.overview.availableDevices / admin.overview.totalDevices) * 100) : 0 }}%</div>
+                                        <div style="font-size: 0.75rem; color: #999; margin-top: 0.5rem;">{{ admin.overview.availableDevices }} / {{ admin.overview.totalDevices }} 台</div>
+                                    </div>
+                                    <!-- 订单完成率 -->
+                                    <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">订单完成率</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: #198754;">{{ (admin.overview.activeRentals + admin.overview.completedRentals + admin.overview.canceledRentals + admin.overview.overdueRentals) > 0 ? Math.round((admin.overview.completedRentals / (admin.overview.activeRentals + admin.overview.completedRentals + admin.overview.canceledRentals + admin.overview.overdueRentals)) * 100) : 0 }}%</div>
+                                        <div style="font-size: 0.75rem; color: #999; margin-top: 0.5rem;">{{ admin.overview.completedRentals }} / {{ admin.overview.activeRentals + admin.overview.completedRentals + admin.overview.canceledRentals + admin.overview.overdueRentals }} 个</div>
+                                    </div>
+                                    <!-- 维修解决率 -->
+                                    <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">维修解决率</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: #fd7e14;">{{ (admin.overview.openRepairs + admin.overview.resolvedRepairs) > 0 ? Math.round((admin.overview.resolvedRepairs / (admin.overview.openRepairs + admin.overview.resolvedRepairs)) * 100) : 0 }}%</div>
+                                        <div style="font-size: 0.75rem; color: #999; margin-top: 0.5rem;">{{ admin.overview.resolvedRepairs }} / {{ admin.overview.openRepairs + admin.overview.resolvedRepairs }} 件</div>
+                                    </div>
+                                    <!-- 平均订单金额 -->
+                                    <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">平均订单金额</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: #6f42c1;">¥{{ (admin.overview.activeRentals + admin.overview.completedRentals + admin.overview.canceledRentals + admin.overview.overdueRentals) > 0 ? (admin.overview.totalRevenue / (admin.overview.activeRentals + admin.overview.completedRentals + admin.overview.canceledRentals + admin.overview.overdueRentals)).toFixed(1) : 0 }}</div>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="card grid-span-full" v-if="showAdminSection('overview')">
+                                <div class="section-title">
+                                    <h3>📊 详细统计</h3>
                                     <button class="btn-refresh" @click="refreshAdminOverview">刷新</button>
                                 </div>
-                                <p v-if="!admin.overview" class="muted">点击刷新拉取最新概览指标。</p>
-                                <div v-else class="stack">
+
+                                <div v-if="admin.overview" class="stack">
+                                    <!-- 用户部分 -->
                                     <div>
-                                        <strong>用户</strong>
-                                        <div class="muted">总数 {{ admin.overview.totalUsers }} · 家属 {{ admin.overview.familyUsers }} · 管理员 {{ admin.overview.adminUsers }}</div>
+                                        <h4>👥 用户统计</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <span class="detail-icon">👥</span>
+                                                <span class="detail-label">总用户数</span>
+                                                <span class="detail-value">{{ admin.overview.totalUsers || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">👨</span>
+                                                <span class="detail-label">家属用户</span>
+                                                <span class="detail-value">{{ admin.overview.familyUsers || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">👔</span>
+                                                <span class="detail-label">管理员</span>
+                                                <span class="detail-value">{{ admin.overview.adminUsers || 0 }}</span>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- 设备部分 -->
                                     <div>
-                                        <strong>设备</strong>
-                                        <div class="muted">总数 {{ admin.overview.totalDevices }} · 可用 {{ admin.overview.availableDevices }} · 使用中 {{ admin.overview.inUseDevices }} · 维修 {{ admin.overview.maintenanceDevices }} · 离线 {{ admin.overview.offlineDevices }}</div>
+                                        <h4>🛏️ 设备统计</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <span class="detail-icon">🛏️</span>
+                                                <span class="detail-label">总设备数</span>
+                                                <span class="detail-value">{{ admin.overview.totalDevices || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">✅</span>
+                                                <span class="detail-label">可用设备</span>
+                                                <span class="detail-value">{{ admin.overview.availableDevices || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">🔄</span>
+                                                <span class="detail-label">使用中</span>
+                                                <span class="detail-value">{{ admin.overview.inUseDevices || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">🔧</span>
+                                                <span class="detail-label">维修中</span>
+                                                <span class="detail-value">{{ admin.overview.maintenanceDevices || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">📴</span>
+                                                <span class="detail-label">离线设备</span>
+                                                <span class="detail-value">{{ admin.overview.offlineDevices || 0 }}</span>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- 租借部分 -->
                                     <div>
-                                        <strong>租借</strong>
-                                        <div class="muted">进行中 {{ admin.overview.activeRentals }} · 已完成 {{ admin.overview.completedRentals }} · 逾期 {{ admin.overview.overdueRentals }} · 已取消 {{ admin.overview.canceledRentals }}</div>
+                                        <h4>📋 租借统计</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <span class="detail-icon">⚡</span>
+                                                <span class="detail-label">进行中</span>
+                                                <span class="detail-value">{{ admin.overview.activeRentals || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">✔️</span>
+                                                <span class="detail-label">已完成</span>
+                                                <span class="detail-value">{{ admin.overview.completedRentals || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">⏰</span>
+                                                <span class="detail-label">已逾期</span>
+                                                <span class="detail-value">{{ admin.overview.overdueRentals || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">❌</span>
+                                                <span class="detail-label">已取消</span>
+                                                <span class="detail-value">{{ admin.overview.canceledRentals || 0 }}</span>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- 维修部分 -->
                                     <div>
-                                        <strong>财务</strong>
-                                        <div class="muted">累计收入 {{ formatNumber(admin.overview.totalRevenue) }} 元 · 钱包余额 {{ formatNumber(admin.overview.walletBalance) }} 元</div>
+                                        <h4>🔧 维修统计</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <span class="detail-icon">⚠️</span>
+                                                <span class="detail-label">待处理</span>
+                                                <span class="detail-value">{{ admin.overview.openRepairs || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">✅</span>
+                                                <span class="detail-label">已解决</span>
+                                                <span class="detail-value">{{ admin.overview.resolvedRepairs || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">📈</span>
+                                                <span class="detail-label">解决率</span>
+                                                <span class="detail-value">{{ (admin.overview.openRepairs + admin.overview.resolvedRepairs) > 0 ? Math.round((admin.overview.resolvedRepairs / (admin.overview.openRepairs + admin.overview.resolvedRepairs)) * 100) : 0 }}%</span>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- 用户增长概览 -->
                                     <div>
-                                        <strong>维修</strong>
-                                        <div class="muted">待处理 {{ admin.overview.openRepairs }} · 已解决 {{ admin.overview.resolvedRepairs }}</div>
+                                        <h4>📱 用户概览</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <span class="detail-icon">👥</span>
+                                                <span class="detail-label">总用户</span>
+                                                <span class="detail-value">{{ admin.overview.totalUsers || 0 }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">📊</span>
+                                                <span class="detail-label">家属占比</span>
+                                                <span class="detail-value">{{ admin.overview.totalUsers > 0 ? Math.round((admin.overview.familyUsers / admin.overview.totalUsers) * 100) : 0 }}%</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-icon">🎯</span>
+                                                <span class="detail-label">活跃租借</span>
+                                                <span class="detail-value">{{ admin.overview.activeRentals || 0 }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p v-else class="muted" style="text-align: center;">点击刷新拉取最新数据</p>
+                            </article>
+
+                            <!-- 设备统计摘要 -->
+                            <article class="card grid-span-full" v-if="showAdminSection('devices')">
+                                <div class="section-title">
+                                    <h3>📊 设备统计</h3>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem;">
+                                    <div style="padding: 1rem; background: #d4edda; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #155724;">✅ 可用</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #28a745;">{{ admin.devices.filter(d => d.status === 'AVAILABLE').length }}</div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #cfe2ff; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #084298;">🔄 使用中</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #0d6efd;">{{ admin.devices.filter(d => d.status === 'IN_USE').length }}</div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #d1ecf1; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #0c5460;">🔧 维修</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #17a2b8;">{{ admin.devices.filter(d => d.status === 'MAINTENANCE').length }}</div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #fff3cd; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #856404;">📴 离线</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #ff9800;">{{ admin.devices.filter(d => d.status === 'OFFLINE').length }}</div>
                                     </div>
                                 </div>
                             </article>
 
-                            <article class="card grid-span-full">
+                            <article class="card grid-span-full" v-if="showAdminSection('devices')">
                                 <div class="section-title">
-                                    <h3>趋势分析</h3>
-                                    <button class="btn-refresh" @click="refreshAdminAnalytics">刷新</button>
-                                </div>
-                                <h4>使用趋势</h4>
-                                <table v-if="admin.analytics && admin.analytics.usageTrend.length">
-                                    <thead>
-                                        <tr><th>时间</th><th>数值</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="point in admin.analytics.usageTrend" :key="point.timestamp">
-                                            <td>{{ formatTime(point.timestamp) }}</td>
-                                            <td>{{ formatNumber(point.value) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <p v-else class="muted">暂无使用趋势数据。</p>
-                                <h4 style="margin-top:1.25rem;">营收趋势</h4>
-                                <table v-if="admin.analytics && admin.analytics.revenueTrend.length">
-                                    <thead>
-                                        <tr><th>时间</th><th>金额</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="point in admin.analytics.revenueTrend" :key="point.timestamp + '-rev'">
-                                            <td>{{ formatTime(point.timestamp) }}</td>
-                                            <td>{{ formatNumber(point.value) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <p v-else class="muted">暂无营收趋势数据。</p>
-                            </article>
-
-                            <article class="card grid-span-full">
-                                <div class="section-title">
-                                    <h3>设备管理</h3>
-                                    <div class="button-row">
-                                        <select v-model="admin.deviceFilter">
-                                            <option value="">全部状态</option>
-                                            <option v-for="status in enums.deviceStatuses" :key="status" :value="status">{{ displayDeviceStatus(status) }}</option>
-                                        </select>
-                                        <button class="btn-refresh" @click="refreshAdminDevices">刷新</button>
-                                    </div>
+                                    <h3>📝 注册新设备</h3>
                                 </div>
                                 <form class="form-inline" @submit.prevent="registerDevice">
                                     <label>
@@ -474,221 +851,440 @@
                                     </label>
                                     <button type="submit">登记新设备</button>
                                 </form>
-                                <form class="form-inline" style="margin-top:1rem;" @submit.prevent="updateDevice" v-if="admin.edit.id">
-                                    <label>
-                                        病区
-                                        <input type="text" v-model="admin.edit.ward" required>
-                                    </label>
-                                    <label>
-                                        床位号
-                                        <input type="text" v-model="admin.edit.bedNumber" required>
-                                    </label>
-                                    <label>
-                                        状态
-                                        <select v-model="admin.edit.status">
-                                            <option v-for="status in enums.deviceStatuses" :key="status" :value="status">{{ displayDeviceStatus(status) }}</option>
-                                        </select>
-                                    </label>
-                                    <div class="button-row" style="margin-top:0;">
-                                        <button type="submit">保存更改</button>
-                                        <button type="button" class="secondary" @click="deleteDevice">删除设备</button>
-                                    </div>
-                                </form>
-                                <p v-else class="muted" style="margin-top:1rem;">点击下方列表中的设备即可载入编辑表单。</p>
-                                <table style="margin-top:1rem;">
+                                <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin-top: 0.75rem;">
+                                    <h3 style="margin: 0; flex: 1;">设备列表</h3>
+                                    <input type="text" v-model="admin.deviceSearchKeyword" placeholder="搜索编号或病区..." style="flex: 1; min-width: 120px; padding: 0.5rem;">
+                                    <select v-model="admin.deviceFilter" style="flex: 1; min-width: 120px;">
+                                        <option value="">全部状态</option>
+                                        <option v-for="status in enums.deviceStatuses" :key="status" :value="status">{{ displayDeviceStatus(status) }}</option>
+                                    </select>
+                                    <button class="btn-refresh" @click="refreshAdminDevices">刷新</button>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                                    <p class="muted" style="margin: 0;">共 {{ filteredAdminDevices.length }} 台设备 | 点击即可编辑信息</p>
+                                    <button type="button" class="secondary" @click="unlockAllOnlineDevices" style="font-size: 0.9rem; padding: 0.3rem 0.8rem;">🔓 一键开锁所有在线设备</button>
+                                </div>
+                                <table style="margin-top: 0rem; width: 100%; font-size: 1.05rem;">
                                     <thead>
                                         <tr>
-                                            <th>编号</th>
-                                            <th>位置</th>
-                                            <th>状态</th>
-                                            <th>锁状态</th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem; width: 50px;"></th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem;">设备编号</th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem;">病区</th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem;">床位号</th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem;">状态</th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem;">锁状态</th>
+                                            <th style="font-size: 1.1rem; text-align: center; padding: 1rem;">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="device in filteredAdminDevices" :key="device.id" @click="selectDeviceForEdit(device)">
-                                            <td>{{ device.deviceCode }}</td>
-                                            <td>{{ device.ward }} · {{ device.bedNumber }}</td>
-                                            <td>{{ displayDeviceStatus(device.status) }}</td>
-                                            <td>{{ displayLockStatus(device.lockStatus, device.status) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </article>
-
-                            <article class="card grid-span-full">
-                                <h3>设备运维动作</h3>
-                                <div class="form-inline">
-                                    <label>
-                                        目标设备
-                                        <select v-model="admin.actionDeviceId">
-                                            <option value="">选择设备</option>
-                                            <option v-for="device in admin.devices" :key="device.id" :value="device.id">{{ device.deviceCode }}</option>
-                                        </select>
-                                    </label>
-                                    <button @click="triggerReboot" type="button">远程重启</button>
-                                </div>
-                                <div class="form-inline" style="margin-top:1rem;">
-                                    <label>
-                                        故障描述
-                                        <input type="text" v-model="admin.faultForm.description" placeholder="床体升降异常">
-                                    </label>
-                                    <button @click="submitFault" type="button">上报故障</button>
-                                </div>
-                            </article>
-
-                            <article class="card grid-span-full">
-                                <div class="section-title">
-                                    <h3>租借订单</h3>
-                                    <div class="button-row">
-                                        <select v-model="admin.rentalStatusFilter">
-                                            <option value="">全部状态</option>
-                                            <option v-for="status in enums.rentalStatuses" :key="status" :value="status">{{ status }}</option>
-                                        </select>
-                                        <button class="btn-refresh" @click="refreshAdminRentals">刷新</button>
-                                    </div>
-                                </div>
-                                <table class="table-compact">
-                                    <thead>
-                                        <tr>
-                                            <th>订单号</th>
-                                            <th>设备</th>
-                                            <th>用户</th>
-                                            <th>状态</th>
-                                            <th>金额</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="rental in filteredAdminRentals" :key="rental.id">
-                                            <td>{{ shortId(rental.id) }}</td>
-                                            <td>{{ rental.deviceCode }}</td>
-                                            <td>{{ shortId(rental.userId) }}</td>
-                                            <td>{{ rental.status }}</td>
-                                            <td>{{ formatNumber(rental.amount) }}</td>
-                                            <td>
-                                                <button v-if="rental.status === 'ACTIVE'" class="secondary" @click="cancelRentalAdmin(rental.id)">取消订单</button>
+                                        <tr v-for="device in filteredAdminDevices" :key="device.id" style="min-height: 3rem; transition: background 0.2s;" @mouseover="$event.target.closest('tr').style.background='#f8f9fa'" @mouseout="$event.target.closest('tr').style.background=''">
+                                            <td style="font-size: 1rem; text-align: center; padding: 1rem;" @click="selectDeviceForEdit(device)">
+                                                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; cursor: pointer;" :style="{background: device.status === 'AVAILABLE' ? '#28a745' : device.status === 'IN_USE' ? '#0d6efd' : device.status === 'MAINTENANCE' ? '#17a2b8' : '#ff9800'}"></span>
+                                            </td>
+                                            <td style="font-size: 1.05rem; text-align: center; padding: 1rem; cursor: pointer;" @click="selectDeviceForEdit(device)"><strong>{{ device.deviceCode }}</strong></td>
+                                            <td style="font-size: 1.05rem; text-align: center; padding: 1rem; cursor: pointer;" @click="selectDeviceForEdit(device)">{{ device.ward }}</td>
+                                            <td style="font-size: 1.05rem; text-align: center; padding: 1rem; cursor: pointer;" @click="selectDeviceForEdit(device)">{{ device.bedNumber }}</td>
+                                            <td style="font-size: 1.05rem; text-align: center; padding: 1rem; cursor: pointer;" @click="selectDeviceForEdit(device)">{{ displayDeviceStatus(device.status) }}</td>
+                                            <td style="font-size: 1.05rem; text-align: center; padding: 1rem;">{{ displayLockStatus(device.lockStatus) }}</td>
+                                            <td style="text-align: center; padding: 1rem;">
+                                                <button type="button" class="secondary action-mini-btn" @click.stop="unlockDevice(device.id)" title="远程开锁">🔓 开锁</button>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
+
+                                <div class="device-edit-modal" v-if="admin.deviceEditModalVisible" @click="closeDeviceEditModal">
+                                    <article class="card device-edit-modal-card" @click.stop>
+                                        <div class="section-title device-edit-title" style="margin-bottom: 0.5rem;">
+                                            <h3>编辑设备</h3>
+                                            <span class="device-edit-close" role="button" tabindex="0" aria-label="关闭弹窗" @click="closeDeviceEditModal" @keydown.enter="closeDeviceEditModal" @keydown.space.prevent="closeDeviceEditModal">&times;</span>
+                                        </div>
+                                        <form class="form-inline" @submit.prevent="updateDevice">
+                                            <label>
+                                                设备编号
+                                                <input type="text" v-model="admin.edit.deviceCode" readonly>
+                                            </label>
+                                            <label>
+                                                病区
+                                                <input type="text" v-model="admin.edit.ward" required>
+                                            </label>
+                                            <label>
+                                                床位号
+                                                <input type="text" v-model="admin.edit.bedNumber" required>
+                                            </label>
+                                            <label>
+                                                状态
+                                                <select v-model="admin.edit.status">
+                                                    <option v-for="status in enums.deviceStatuses" :key="status" :value="status">{{ displayDeviceStatus(status) }}</option>
+                                                </select>
+                                            </label>
+                                            <div class="button-row device-edit-actions" style="margin-top:0;">
+                                                <button type="submit">保存更改</button>
+                                                <button type="button" class="secondary" @click="deleteDevice">删除设备</button>
+                                            </div>
+                                        </form>
+                                    </article>
+                                </div>
                             </article>
 
-                            <article class="card">
+                            <!-- 服务管理统计摘要 -->
+                            <article class="card grid-span-full" v-if="showAdminSection('services')">
                                 <div class="section-title">
-                                    <h3>费用争议</h3>
-                                    <button class="btn-refresh" @click="refreshDisputes">刷新</button>
+                                    <h3>📊 服务统计</h3>
                                 </div>
-                                <form class="stack" style="margin-top:1rem;" @submit.prevent="submitDisputeUpdate">
-                                    <label>
-                                        争议单
-                                        <select v-model="admin.disputeUpdate.id" required>
-                                            <option value="">选择争议记录</option>
-                                            <option v-for="dispute in admin.disputes" :key="dispute.id" :value="dispute.id">
-                                                {{ dispute.orderId }} · {{ dispute.status }}
-                                            </option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        状态
-                                        <select v-model="admin.disputeUpdate.status" required>
-                                            <option v-for="status in enums.disputeStatuses" :key="status" :value="status">{{ status }}</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        处理说明
-                                        <textarea rows="3" v-model="admin.disputeUpdate.resolution" required></textarea>
-                                    </label>
-                                    <button type="submit">提交处理结果</button>
-                                </form>
-                                <h4 style="margin-top:1.25rem;">全部争议</h4>
-                                <ul class="list-plain">
-                                    <li v-for="dispute in admin.disputes" :key="dispute.id">
-                                        <strong>{{ dispute.orderId }}</strong> · {{ dispute.status }}
-                                        <div class="muted">原因：{{ dispute.reason }}</div>
-                                        <div class="muted" v-if="dispute.resolution">处理：{{ dispute.resolution }}</div>
-                                    </li>
-                                </ul>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem;">
+                                    <div style="padding: 1rem; background: #e7f3ff; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #0066cc;">📋 租借订单</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #0d6efd;">{{ admin.rentals.length }}</div>
+                                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+                                            <span style="display: block;" v-if="admin.rentals.filter(r => r.status === 'ACTIVE').length">⚡ 进行中 {{ admin.rentals.filter(r => r.status === 'ACTIVE').length }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #ffe7e7; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #cc0000;">⚠️ 费用争议</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #dc3545;">{{ admin.disputes.length }}</div>
+                                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+                                            <span style="display: block;" v-if="admin.disputes.filter(d => d.status === 'OPEN').length">待处理 {{ admin.disputes.filter(d => d.status === 'OPEN').length }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #e7f5e7; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #006600;">🔧 维修工单</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #198754;">{{ admin.repairs.length }}</div>
+                                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+                                            <span style="display: block;" v-if="admin.repairs.filter(t => t.status === 'OPEN').length || admin.repairs.filter(t => t.status === 'IN_PROGRESS').length">待处理 {{ admin.repairs.filter(t => t.status === 'OPEN').length + admin.repairs.filter(t => t.status === 'IN_PROGRESS').length }}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </article>
 
-                            <article class="card">
-                                <div class="section-title">
-                                    <h3>维修工单</h3>
-                                    <button class="btn-refresh" @click="refreshAdminRepairs">刷新</button>
+                            <article class="card grid-span-full" v-if="showAdminSection('services')">
+                                <div class="section-title" style="display: flex; align-items: center; gap: 10px;">
+                                    <h3 style="margin: 0; flex: 1;">📋 租借订单</h3>
+                                    <select v-model="admin.rentalStatusFilter" style="flex: 1; min-width: 120px;">
+                                        <option value="">全部状态</option>
+                                        <option v-for="status in enums.rentalStatuses" :key="status" :value="status">{{ displayRentalStatus(status) }}</option>
+                                    </select>
+                                    <button class="btn-refresh" @click="refreshAdminRentals">刷新</button>
                                 </div>
-                                <form class="stack" style="margin-top:1rem;" @submit.prevent="submitRepairUpdate">
-                                    <label>
-                                        工单
-                                        <select v-model="admin.repairUpdate.id" required>
-                                            <option value="">选择维修工单</option>
-                                            <option v-for="ticket in admin.repairs" :key="ticket.id" :value="ticket.id">
-                                                {{ ticket.deviceCode }} · {{ ticket.status }}
-                                            </option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        状态
-                                        <select v-model="admin.repairUpdate.status" required>
-                                            <option v-for="status in enums.repairStatuses" :key="status" :value="status">{{ status }}</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        处理说明
-                                        <textarea rows="3" v-model="admin.repairUpdate.resolution" required></textarea>
-                                    </label>
-                                    <button type="submit">更新工单</button>
-                                </form>
-                                <h4 style="margin-top:1.25rem;">工单列表</h4>
-                                <ul class="list-plain">
-                                    <li v-for="ticket in admin.repairs" :key="ticket.id">
-                                        <strong>{{ ticket.deviceCode }}</strong> · {{ ticket.status }}
-                                        <div class="muted">描述：{{ ticket.description }}</div>
-                                        <div class="muted">创建：{{ formatTime(ticket.createdAt) }}</div>
-                                    </li>
-                                </ul>
-                            </article>
-
-                            <article class="card">
-                                <div class="section-title">
-                                    <h3>通知广播</h3>
-                                    <button class="btn-refresh" @click="refreshAdminMessages">刷新</button>
-                                </div>
-                                <ul class="list-plain" style="margin-top:1rem;">
-                                    <li v-for="msg in admin.adminMessages" :key="msg.id">
-                                        <strong>{{ msg.title }}</strong> · {{ msg.type }}
-                                        <div class="muted">{{ formatTime(msg.createdAt) }}</div>
-                                        <p>{{ msg.content }}</p>
-                                    </li>
-                                </ul>
-                            </article>
-
-                            <article class="card">
-                                <div class="section-title">
-                                    <h3>用户列表</h3>
-                                    <button class="btn-refresh" @click="refreshUsers">刷新</button>
-                                </div>
-                                <table style="margin-top:1rem;">
+                                <p class="muted" style="margin-top: 0rem; margin-bottom: 0.5rem;">共 {{ filteredAdminRentals.length }} 个订单</p>
+                                <table class="table-compact admin-table">
                                     <thead>
                                         <tr>
-                                            <th>姓名</th>
-                                            <th>角色</th>
-                                            <th>手机号</th>
+                                            <th style="padding: 1rem; width: 30px;"></th>
+                                            <th style="padding: 1rem;">订单号</th>
+                                            <th style="padding: 1rem;">设备</th>
+                                            <th style="padding: 1rem;">用户</th>
+                                            <th style="padding: 1rem;">状态</th>
+                                            <th style="padding: 1rem;">金额</th>
+                                            <th style="padding: 1rem;">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="user in admin.users" :key="user.id">
-                                            <td>{{ user.fullName || user.username }}</td>
-                                            <td>{{ user.role }}</td>
-                                            <td>{{ user.phone || '-' }}</td>
+                                        <tr v-for="rental in pagedAdminRentals" :key="rental.id" style="min-height: 3rem;">
+                                            <td style="padding: 1rem; text-align: center;">
+                                                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%;" :style="{background: rental.status === 'ACTIVE' ? '#ff9800' : rental.status === 'COMPLETED' ? '#28a745' : rental.status === 'OVERDUE' ? '#dc3545' : '#6c757d'}"></span>
+                                            </td>
+                                            <td style="padding: 1rem;">{{ shortId(rental.id) }}</td>
+                                            <td style="padding: 1rem;">{{ rental.deviceCode }}</td>
+                                            <td style="padding: 1rem;">{{ shortId(rental.userId) }}</td>
+                                            <td style="padding: 1rem;">{{ displayRentalStatus(rental.status) }}</td>
+                                            <td style="padding: 1rem;">{{ formatNumber(rental.amount) }}</td>
+                                            <td style="padding: 1rem;">
+                                                <button v-if="rental.status === 'ACTIVE'" class="secondary cancel-order-btn" @click="cancelRentalAdmin(rental.id)">取消订单</button>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div class="pager" v-if="adminRentalsTotalPages > 1">
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.adminRentals || 1 }} / {{ adminRentalsTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.adminRentals === 1" @click="changePage('adminRentals', -1, adminRentalsTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.adminRentals === adminRentalsTotalPages" @click="changePage('adminRentals', 1, adminRentalsTotalPages)">下一页</button>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="card" v-if="showAdminSection('services')">
+                                <div class="section-title" style="display: flex; align-items: center; gap: 10px;">
+                                    <h3 style="margin: 0; flex: 1;">⚠️ 费用争议 <span v-if="admin.disputes.filter(d => d.status === 'OPEN').length" style="font-size: 0.9rem; color: #dc3545; margin-left: 0.5rem;">({{ admin.disputes.filter(d => d.status === 'OPEN').length }} 待处理)</span></h3>
+                                    <select v-model="admin.disputeStatusFilter" style="flex: 1; min-width: 120px;">
+                                        <option value="">全部状态</option>
+                                        <option v-for="status in enums.disputeStatuses" :key="status" :value="status">{{ displayDisputeStatus(status) }}</option>
+                                    </select>
+                                    <button class="btn-refresh" @click="refreshDisputes">刷新</button>
+                                </div>
+                                <h4 style="margin-top:1rem;">争议记录 (筛选 {{ filteredAdminDisputes.length }} / 总 {{ admin.disputes.length }} 条)</h4>
+                                <ul class="list-plain">
+                                    <li v-for="dispute in pagedAdminDisputes" :key="dispute.id" style="padding: 0.75rem; border-left: 4px solid;" :style="{borderColor: disputeStatusColor(dispute.status)}">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+                                            <div style="flex: 1;">
+                                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;" :style="{background: disputeStatusColor(dispute.status)}"></span>
+                                                    <strong>{{ dispute.orderId.substring(0, 8) }}{{ dispute.orderId.length > 8 ? '...' : '' }}</strong>
+                                                    <span style="color: #666;">·</span>
+                                                    <span>{{ displayDisputeStatus(dispute.status) }}</span>
+                                                    <span style="font-size: 0.85rem; background: #e9ecef; padding: 0.1rem 0.4rem; border-radius: 4px;">订单金额: ¥{{ formatNumber(dispute.orderAmount) }}</span>
+                                                    <span v-if="dispute.refunded" style="font-size: 0.8rem; color: #28a745;">✅ 已退费</span>
+                                                </div>
+                                                <div class="muted">原因：{{ dispute.reason }}</div>
+                                                <div class="muted" v-if="dispute.resolution">处理：{{ dispute.resolution }}</div>
+                                                <div class="muted" style="margin-top: 0.25rem;">提交时间：{{ formatTime(dispute.createdAt) }}</div>
+                                            </div>
+                                            <div style="flex-shrink: 0; display: flex; gap: 0.3rem;">
+                                                <button v-if="dispute.status !== 'RESOLVED' && dispute.status !== 'REJECTED'" type="button" class="secondary action-mini-btn" @click="openDisputeEditModal(dispute)">处理</button>
+                                                <button v-if="!dispute.refunded && dispute.status !== 'RESOLVED' && dispute.status !== 'REJECTED'" type="button" class="secondary action-mini-btn" style="background:#28a745;color:#fff;" @click="disputeRefund(dispute.id, dispute.orderId, dispute.orderAmount)">💰 退费</button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li v-if="!pagedAdminDisputes.length" class="muted">当前筛选条件下暂无争议记录。</li>
+                                </ul>
+                                <div class="pager" v-if="adminDisputesTotalPages > 1">
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.adminDisputes || 1 }} / {{ adminDisputesTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.adminDisputes === 1" @click="changePage('adminDisputes', -1, adminDisputesTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.adminDisputes === adminDisputesTotalPages" @click="changePage('adminDisputes', 1, adminDisputesTotalPages)">下一页</button>
+                                    </div>
+                                </div>
+                                <div class="device-edit-modal" v-if="admin.disputeEditModalVisible" @click="closeDisputeEditModal">
+                                    <article class="card device-edit-modal-card" @click.stop>
+                                        <div class="section-title device-edit-title" style="margin-bottom: 0.5rem;">
+                                            <h3>处理费用争议</h3>
+                                            <span class="device-edit-close" role="button" tabindex="0" aria-label="关闭弹窗" @click="closeDisputeEditModal" @keydown.enter="closeDisputeEditModal" @keydown.space.prevent="closeDisputeEditModal">&times;</span>
+                                        </div>
+                                        <div v-if="currentAdminDispute" style="margin-bottom: 0.25rem; padding: 0.65rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                            <div><strong>订单号：</strong>{{ currentAdminDispute.orderId }}</div>
+                                            <div class="muted" style="margin-top: 0.35rem;"><strong>原因：</strong>{{ currentAdminDispute.reason }}</div>
+                                            <div class="muted" style="margin-top: 0.25rem;"><strong>提交时间：</strong>{{ formatTime(currentAdminDispute.createdAt) }}</div>
+                                        </div>
+                                        <form class="stack" @submit.prevent="submitDisputeUpdate">
+                                            <label>
+                                                状态
+                                                <select v-model="admin.disputeUpdate.status" required>
+                                                    <option v-for="status in enums.disputeStatuses" :key="status" :value="status">{{ displayDisputeStatus(status) }}</option>
+                                                </select>
+                                            </label>
+                                            <label>
+                                                处理说明
+                                                <textarea rows="3" v-model="admin.disputeUpdate.resolution" required></textarea>
+                                            </label>
+                                            <div class="button-row device-edit-actions" style="margin-top:0;">
+                                                <button type="submit">提交处理结果</button>
+                                                <button type="button" class="secondary" @click="closeDisputeEditModal">取消</button>
+                                            </div>
+                                        </form>
+                                    </article>
+                                </div>
+                            </article>
+
+                            <article class="card" v-if="showAdminSection('services')">
+                                <div class="section-title" style="display: flex; align-items: center; gap: 10px;">
+                                    <h3 style="margin: 0; flex: 1;">🔧 维修工单 <span v-if="admin.repairs.filter(t => t.status === 'OPEN').length || admin.repairs.filter(t => t.status === 'IN_PROGRESS').length" style="font-size: 0.9rem; color: #ff9800; margin-left: 0.5rem;">({{ admin.repairs.filter(t => t.status === 'OPEN').length + admin.repairs.filter(t => t.status === 'IN_PROGRESS').length }} 待处理)</span></h3>
+                                    <select v-model="admin.repairStatusFilter" style="flex: 1; min-width: 120px;">
+                                        <option value="">全部状态</option>
+                                        <option v-for="status in enums.repairStatuses" :key="status" :value="status">{{ displayRepairStatus(status) }}</option>
+                                    </select>
+                                    <button class="btn-refresh" @click="refreshAdminRepairs">刷新</button>
+                                </div>
+                                <h4 style="margin-top:1rem;">工单记录 (筛选 {{ filteredAdminRepairs.length }} / 总 {{ admin.repairs.length }} 条)</h4>
+                                <ul class="list-plain">
+                                    <li v-for="ticket in pagedAdminRepairs" :key="ticket.id" style="padding: 0.75rem; border-left: 4px solid;" :style="{borderColor: ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS' ? '#ff9800' : '#28a745'}">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+                                            <div>
+                                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.5rem;" :style="{background: ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS' ? '#ff9800' : '#28a745'}"></span>
+                                                <strong>{{ ticket.deviceCode }}</strong> · {{ displayRepairStatus(ticket.status) }}
+                                                <div class="muted" style="font-size: 0.85rem;">故障描述：{{ ticket.description }}</div>
+                                                <div class="muted" v-if="ticket.resolution" style="font-size: 0.85rem;">处理说明：{{ ticket.resolution }}</div>
+                                                <div class="muted" style="font-size: 0.8rem;">提交时间：{{ formatTime(ticket.createdAt) }}</div>
+                                                <!-- 故障照片显示已注释掉 -->
+                                                <!-- <div class="repair-photo-grid" v-if="ticket.photos && ticket.photos.length">
+                                                    <div class="repair-photo-item" v-for="(photo, index) in ticket.photos" :key="index">
+                                                        <img :src="photo" :alt="'故障照片 ' + (index + 1)" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                                    </div>
+                                                </div> -->
+                                            </div>
+                                            <button v-if="ticket.status !== 'RESOLVED' && ticket.status !== 'REJECTED'" type="button" class="secondary action-mini-btn" @click="openRepairEditModal(ticket)">处理</button>
+                                        </div>
+                                    </li>
+                                    <li v-if="!pagedAdminRepairs.length" class="muted">当前筛选条件下暂无维修工单。</li>
+                                </ul>
+                                <div class="pager" v-if="adminRepairsTotalPages > 1">
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.adminRepairs || 1 }} / {{ adminRepairsTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.adminRepairs === 1" @click="changePage('adminRepairs', -1, adminRepairsTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.adminRepairs === adminRepairsTotalPages" @click="changePage('adminRepairs', 1, adminRepairsTotalPages)">下一页</button>
+                                    </div>
+                                </div>
+                                <div class="device-edit-modal" v-if="admin.repairEditModalVisible" @click="closeRepairEditModal">
+                                    <article class="card device-edit-modal-card" @click.stop>
+                                        <div class="section-title device-edit-title" style="margin-bottom: 0.5rem;">
+                                            <h3>处理维修工单</h3>
+                                            <span class="device-edit-close" role="button" tabindex="0" aria-label="关闭弹窗" @click="closeRepairEditModal" @keydown.enter="closeRepairEditModal" @keydown.space.prevent="closeRepairEditModal">&times;</span>
+                                        </div>
+                                        <div v-if="currentAdminRepair" style="margin-bottom: 0.25rem; padding: 0.65rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                            <div><strong>设备编号：</strong>{{ currentAdminRepair.deviceCode }}</div>
+                                            <div class="muted" style="margin-top: 0.35rem;"><strong>故障描述：</strong>{{ currentAdminRepair.description }}</div>
+                                            <div class="muted" style="margin-top: 0.25rem;"><strong>提交时间：</strong>{{ formatTime(currentAdminRepair.createdAt) }}</div>
+                                            <!-- 故障照片显示已注释掉 -->
+                                            <!-- <div class="repair-photo-grid" v-if="currentAdminRepair.photos && currentAdminRepair.photos.length" style="margin-top: 0.5rem;">
+                                                <div class="repair-photo-item" v-for="(photo, index) in currentAdminRepair.photos" :key="index">
+                                                    <img :src="photo" :alt="'故障照片 ' + (index + 1)" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                                </div>
+                                            </div> -->
+                                        </div>
+                                        <form class="stack" @submit.prevent="submitRepairUpdate">
+                                            <label>
+                                                状态
+                                                <select v-model="admin.repairUpdate.status" required>
+                                                    <option v-for="status in enums.repairStatuses" :key="status" :value="status">{{ displayRepairStatus(status) }}</option>
+                                                </select>
+                                            </label>
+                                            <label>
+                                                处理说明
+                                                <textarea rows="3" v-model="admin.repairUpdate.resolution" required></textarea>
+                                            </label>
+                                            <div class="button-row device-edit-actions" style="margin-top:0;">
+                                                <button type="submit">更新工单</button>
+                                                <button type="button" class="secondary" @click="closeRepairEditModal">取消</button>
+                                            </div>
+                                        </form>
+                                    </article>
+                                </div>
+                            </article>
+
+                            <!-- 系统管理统计摘要 -->
+                            <article class="card grid-span-full" v-if="showAdminSection('system')">
+                                <div class="section-title">
+                                    <h3>📊 系统统计</h3>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem;">
+                                    <div style="padding: 1rem; background: #e7e7ff; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #330066;">👥 用户总数</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #6f42c1;">{{ admin.users.length }}</div>
+                                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+                                            <span style="display: block;">家属 {{ admin.users.filter(u => u.role === 'FAMILY').length }}</span>
+                                        </div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #fff0e7; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #cc6600;">👔 管理员</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #ff9800;">{{ admin.users.filter(u => u.role === 'ADMIN').length }}</div>
+                                    </div>
+                                    <div style="padding: 1rem; background: #e7f5e7; border-radius: 8px; text-align: center;">
+                                        <div style="font-size: 0.9rem; color: #006600;">📢 通知</div>
+                                        <div style="font-size: 1.8rem; font-weight: bold; color: #198754;">{{ admin.adminMessages.length }}</div>
+                                        <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+                                            <span style="display: block;" v-if="admin.adminMessages.length">最新 {{ admin.adminMessages.slice(0, 1).map(m => formatTime(m.createdAt)).join() }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <article class="card" v-if="showAdminSection('system')">
+                                <div class="section-title">
+                                    <h3>👥 用户列表</h3>
+                                    <input type="text" v-model="admin.userSearchKeyword" placeholder="搜索姓名或手机号..." style="flex: 1; min-width: 150px; padding: 0.5rem;" @input="refreshUsers(1, admin.userSearchKeyword)">
+                                    <button class="btn-refresh" @click="refreshUsers(1, admin.userSearchKeyword)">刷新</button>
+                                </div>
+                                <p class="muted" style="margin-top: 0rem; margin-bottom: 0.5rem;">共 {{ admin.users.length }} 个用户（每页最多展示10人）</p>
+                                <table style="margin-top: 0rem; width: 100%; font-size: 1.05rem;">
+                                    <thead>
+                                        <tr>
+                                            <th style="padding: 1rem; font-size: 1.1rem; width: 30px;"></th>
+                                            <th style="padding: 1rem; font-size: 1.1rem;">姓名</th>
+                                            <th style="padding: 1rem; font-size: 1.1rem;">角色</th>
+                                            <th style="padding: 1rem; font-size: 1.1rem;">手机号</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="user in pagedAdminUsers" :key="user.id" style="min-height: 3rem; cursor: pointer;" @click="openUserEditModal(user)">
+                                            <td style="padding: 1rem; text-align: center;">
+                                                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%;" :style="{background: user.role === 'ADMIN' ? '#ff9800' : '#6f42c1'}"></span>
+                                            </td>
+                                            <td style="padding: 1rem;"><strong>{{ user.fullName || user.username }}</strong></td>
+                                            <td style="padding: 1rem;">{{ displayUserRole(user.role) }}</td>
+                                            <td style="padding: 1rem;">{{ user.phone || '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="pager" v-if="adminUsersTotalPages > 1">
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.adminUsers || 1 }} / {{ adminUsersTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.adminUsers === 1" @click="changePage('adminUsers', -1, adminUsersTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.adminUsers === adminUsersTotalPages" @click="changePage('adminUsers', 1, adminUsersTotalPages)">下一页</button>
+                                    </div>
+                                </div>
+                                <!-- 用户编辑弹窗 -->
+                                <div class="device-edit-modal" v-if="admin.userEditModalVisible" @click="admin.userEditModalVisible = false">
+                                    <article class="card device-edit-modal-card" @click.stop>
+                                        <div class="section-title device-edit-title" style="margin-bottom: 0.5rem;">
+                                            <h3>编辑用户</h3>
+                                            <span class="device-edit-close" role="button" tabindex="0" aria-label="关闭弹窗" @click="admin.userEditModalVisible = false" @keydown.enter="admin.userEditModalVisible = false" @keydown.space.prevent="admin.userEditModalVisible = false">&times;</span>
+                                        </div>
+                                        <form class="stack" @submit.prevent="submitUserEdit">
+                                            <label>用户名
+                                                <input type="text" v-model="admin.userEditForm.username" placeholder="留空不修改">
+                                            </label>
+                                            <label>姓名
+                                                <input type="text" v-model="admin.userEditForm.fullName" placeholder="留空不修改">
+                                            </label>
+                                            <label>手机号
+                                                <input type="tel" v-model="admin.userEditForm.phone" placeholder="留空不修改">
+                                            </label>
+                                            <div class="button-row" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                                                <button type="submit" style="flex:1;">保存修改</button>
+                                                <button type="button" class="secondary" @click="admin.userEditForm.showResetPwd = !admin.userEditForm.showResetPwd" style="flex:1;">🔑 重置密码</button>
+                                                <button type="button" class="secondary" @click="admin.userEditForm.showSetBalance = !admin.userEditForm.showSetBalance" style="flex:1;">💰 改余额</button>
+                                                <button type="button" class="secondary" @click="admin.userEditForm.showDelete = !admin.userEditForm.showDelete" style="flex:1;color:#dc3545;">🗑️ 注销</button>
+                                            </div>
+                                            <div v-if="admin.userEditForm.showResetPwd" style="margin-top:0.5rem;">
+                                                <label>新密码
+                                                    <input type="password" v-model="admin.userEditForm.newPassword" placeholder="输入新密码（至少6位）">
+                                                </label>
+                                                <button type="button" class="secondary" @click="submitUserPassword">确认重置密码</button>
+                                            </div>
+                                            <div v-if="admin.userEditForm.showSetBalance" style="margin-top:0.5rem;">
+                                                <label>新余额（元）
+                                                    <input type="number" min="0" step="0.01" v-model="admin.userEditForm.newBalance" placeholder="输入新余额">
+                                                </label>
+                                                <button type="button" class="secondary" @click="submitUserBalance">确认修改余额</button>
+                                            </div>
+                                            <div v-if="admin.userEditForm.showDelete" style="margin-top:0.5rem;padding:0.5rem;background:#fff5f5;border-radius:4px;">
+                                                <p style="color:#dc3545;">⚠️ 确定要注销此账户吗？不可恢复！</p>
+                                                <button type="button" style="background:#dc3545;color:#fff;border:none;border-radius:4px;padding:0.5rem 1rem;" @click="submitUserDelete">确认注销</button>
+                                                <button type="button" class="secondary" @click="admin.userEditForm.showDelete = false">取消</button>
+                                            </div>
+                                        </form>
+                                    </article>
+                                </div>
+                            </article>
+
+                            <article class="card" v-if="showAdminSection('system')">
+                                <div class="section-title">
+                                    <h3>📢 通知广播 (共 {{ admin.adminMessages.length }} 条)</h3>
+                                    <button class="btn-refresh" @click="refreshAdminMessages">刷新</button>
+                                </div>
+                                <ul class="list-plain" style="margin-top:1rem;">
+                                    <li v-for="msg in pagedAdminMessages" :key="msg.id" style="padding: 0.75rem; border-left: 4px solid #6f42c1; border-radius: 4px; margin-bottom: 0.5rem;">
+                                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #6f42c1; margin-right: 0.5rem;"></span>
+                                        <strong>{{ msg.title }}</strong>
+                                        <span style="font-size: 0.85rem; color: #666; margin-left: 0.5rem;">· {{ displayNotificationType(msg.type) }}</span>
+                                        <div class="muted" style="font-size: 0.85rem; margin-top: 0.25rem;">{{ formatTime(msg.createdAt) }}</div>
+                                        <p style="margin-top: 0.5rem; margin-bottom: 0;">{{ msg.content }}</p>
+                                    </li>
+                                </ul>
+                                <div class="pager" v-if="adminMessagesTotalPages > 1">
+                                    <div style="text-align: center; margin-bottom: 8px;"><span class="pager-info">第 {{ pagination.adminMessages || 1 }} / {{ adminMessagesTotalPages }} 页</span></div>
+                                    <div style="display: flex; justify-content: center; gap: 10px;">
+                                        <button type="button" class="secondary" :disabled="pagination.adminMessages === 1" @click="changePage('adminMessages', -1, adminMessagesTotalPages)">上一页</button>
+                                        <button type="button" class="secondary" :disabled="pagination.adminMessages === adminMessagesTotalPages" @click="changePage('adminMessages', 1, adminMessagesTotalPages)">下一页</button>
+                                    </div>
+                                </div>
                             </article>
                         </div>
                     </section>
                 </section>
             </div>
 
-            <section class="log-grid" v-if="showLogCards">
+            <!-- <section class="log-grid" v-if="showLogCards">
                 <article class="card log-card">
                     <h2>API 请求日志</h2>
                     <pre>{{ logs.slice().reverse().join('\n') || '暂无请求记录' }}</pre>
@@ -697,35 +1293,60 @@
                     <h2>MQTT 日志</h2>
                     <pre>{{ mqttLogs.slice().reverse().join('\n') || '暂无MQTT记录' }}</pre>
                 </article>
-            </section>
+            </section> -->
 
-            <nav class="mobile-bottom-nav" v-if="mobileNavVisible">
-                <button :class="{ active: mobileTab === 'devices' }" @click="switchMobileTab('devices')">
+            <nav class="mobile-bottom-nav" v-if="mobileNavVisible && !isAdmin">
+                <button type="button" :class="{ active: mobileTab === 'devices' }" @click="switchMobileTab('devices')">
                     <i class="fa-solid fa-bed nav-icon" aria-hidden="true"></i>
                     <span class="nav-label">设备</span>
-                    <span class="nav-sub">状态</span>
+                    <!-- <span class="nav-sub">状态</span> -->
                 </button>
-                <button :class="{ active: mobileTab === 'orders' }" @click="switchMobileTab('orders')">
+                <button type="button" :class="{ active: mobileTab === 'orders' }" @click="switchMobileTab('orders')">
                     <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
                     <span class="nav-label">订单</span>
-                    <span class="nav-sub">租借·报修</span>
+                    <!-- <span class="nav-sub">租借·报修</span> -->
                 </button>
-                <button :class="{ active: mobileTab === 'messages' }" @click="switchMobileTab('messages')">
+                <button type="button" :class="{ active: mobileTab === 'messages' }" @click="switchMobileTab('messages')">
                     <i class="fa-solid fa-bell nav-icon" aria-hidden="true"></i>
                     <span class="nav-label">消息</span>
-                    <span class="nav-sub">通知</span>
+                    <!-- <span class="nav-sub">通知</span> -->
                 </button>
-                <button :class="{ active: mobileTab === 'mine' }" @click="switchMobileTab('mine')">
+                <button type="button" :class="{ active: mobileTab === 'mine' }" @click="switchMobileTab('mine')">
                     <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
                     <span class="nav-label">我的</span>
-                    <span class="nav-sub">钱包</span>
+                    <!-- <span class="nav-sub">钱包</span> -->
+                </button>
+            </nav>
+            <nav class="mobile-bottom-nav" v-if="mobileNavVisible && isAdmin">
+                <button type="button" :class="{ active: adminMobileTab === 'overview' }" @click="switchAdminMobileTab('overview')">
+                    <i class="fa-solid fa-chart-pie nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">概览</span>
+                    <!-- <span class="nav-sub">统计·分析</span> -->
+                </button>
+                <button type="button" :class="{ active: adminMobileTab === 'devices' }" @click="switchAdminMobileTab('devices')">
+                    <i class="fa-solid fa-bed nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">设备</span>
+                    <!-- <span class="nav-sub">管理</span> -->
+                </button>
+                <button type="button" :class="{ active: adminMobileTab === 'services' }" @click="switchAdminMobileTab('services')">
+                    <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">服务</span>
+                    <!-- <span class="nav-sub">订单·维修</span> -->
+                </button>
+                <button type="button" :class="{ active: adminMobileTab === 'system' }" @click="switchAdminMobileTab('system')">
+                    <i class="fa-solid fa-cog nav-icon" aria-hidden="true"></i>
+                    <span class="nav-label">系统</span>
+                    <!-- <span class="nav-sub">用户·通知</span> -->
                 </button>
             </nav>
         </template>
     </main>
+    
 </div>
-
+<!-- <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+<script>new VConsole();</script> -->
 <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <script type="module" src="./assets/js/bootstrap/main.js"></script>
+    <!-- <script type="module" src="./assets/js/bootstrap/main.js"></script> -->
+     <script type="module" src="./assets/js/bootstrap/main.js?v=17"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -43,7 +44,7 @@ public class RepairTicketEntity {
     @Column(nullable = false, length = 512)
     private String description;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "repair_ticket_photos", joinColumns = @JoinColumn(name = "ticket_id"))
     @Column(name = "photo_url", length = 512)
     private List<String> photos = new ArrayList<>();

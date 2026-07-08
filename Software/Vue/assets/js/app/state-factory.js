@@ -1,10 +1,14 @@
-import { defaultLoginForm, defaultRegisterForm, defaultCustomerState, defaultAdminState } from '../core/app-config.js';
+import { defaultLoginForm, defaultRegisterForm, defaultResetForm, defaultCustomerState, defaultAdminState } from '../core/app-config.js';
 
 export function createInitialState() {
         return {
             authCard: 'login',
             loginForm: defaultLoginForm(),
             registerForm: defaultRegisterForm(),
+            resetForm: defaultResetForm(),
+            rentalOption: 'manual',
+            scanning: false,
+            scanMockTimer: null,
             session: {
                 token: null,
                 role: null,
@@ -33,16 +37,35 @@ export function createInitialState() {
             now: new Date(),
             expandedRentals: [],
             lockedDeviceCode: '',
+            currentRental: null,
+            rentalTimer: null,
+            rentalStartTime: null,
+            returningRentalId: null,
+            isTemporaryLocked: false,
+            scanEntryRentalOption: 'manual',
+            scanEntryDeviceCode: '',
+            scanning: false,
             mobileTab: 'devices',
+            adminMobileTab: 'overview',
+             adminDesktopTab: 'overview',
             isMobile: false,
+            isWechat: window.isWechat || false,
             sessionExpiredHandling: false,
+             showAllDisputes: false,
+             disputesLoaded: false,
+             isLoadingDisputes: false,
             pageSize: 6,
-            pagination: {
-                devices: 1,
-                rentals: 1,
-                repairs: 1,
-                messages: 1,
-                transactions: 1
-            }
-        };
+             pagination: {
+                 devices: 1,
+                 rentals: 1,
+                 repairs: 1,
+                 messages: 1,
+                 transactions: 1,
+                 adminUsers: 1
+             },
+             userChartInstance: null,
+             deviceChartInstance: null,
+             rentalChartInstance: null,
+             showAllRepairs: false
+         };
 }
